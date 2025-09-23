@@ -10,10 +10,10 @@ import { MetricsModule } from '@metrics/metrics.module';
 import { MetricsMiddleware } from '@middlewares/metrics.middleware';
 import { BullModule } from '@nestjs/bullmq';
 import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-yet';
+import { redisStore } from 'cache-manager-redis-store';
 import { Logger, MiddlewareConsumer, Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { DevtoolsModule } from '@nestjs/devtools-integration';
+// import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RedisModule } from '@redis/redis.module';
@@ -24,6 +24,7 @@ import { EnvConfig } from '@config/env.config';
 import { ErrorHandlerService } from '@common/services/error-handler.service';
 import { DevToolsModule } from './api/dev-tools/dev-tools.module';
 import { OtelModule } from '@otel/otel.module';
+import { TracingModule } from './api/tracing/tracing.module';
 import { DevToolsMiddleware } from '@middlewares/dev-tool.middleware';
 import { RouteNames } from '@common/route-names';
 import { CookieAuthMiddleware } from '@middlewares/cookies.middleware';
@@ -88,9 +89,9 @@ const cacheModule = CacheModule.registerAsync({
 
 @Module({
   imports: [
-    DevtoolsModule.register({
-      http: process.env.NODE_ENV !== 'production',
-    }),
+    // DevtoolsModule.register({
+    //   http: process.env['NODE_ENV'] !== 'production',
+    // }),
     rateLimit,
     cacheModule,
     EnvConfigModule,
@@ -110,6 +111,7 @@ const cacheModule = CacheModule.registerAsync({
     MetricsModule,
     HealthModule,
     DevToolsModule,
+    TracingModule,
   ],
   providers: [
     ErrorHandlerService,

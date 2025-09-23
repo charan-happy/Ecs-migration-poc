@@ -1,6 +1,6 @@
 export class ApiResponse<T> {
   statusCode?: number;
-  status: string;
+  status!: string;
   message?: string;
   error?: string;
   traceId?: string;

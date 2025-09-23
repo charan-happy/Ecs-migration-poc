@@ -23,7 +23,10 @@ export class ErrorHandlerService {
     return this.handleUnhandledError(error, context);
   }
 
-  private handlePrismaError(error: PrismaClientKnownRequestError, context: string): ApiResponse<null> {
+  private handlePrismaError(
+    error: PrismaClientKnownRequestError,
+    context: string
+  ): ApiResponse<null> {
     const formatMessage = (
       defaultMessage: string,
       model: string,
@@ -31,7 +34,9 @@ export class ErrorHandlerService {
       target?: string | string[]
     ) => {
       const fieldInfo = field ? `Fields: ${Array.isArray(field) ? field.join(', ') : field}.` : '';
-      const targetInfo = target ? `Fields: ${Array.isArray(target) ? target.join(', ') : target}.` : '';
+      const targetInfo = target
+        ? `Fields: ${Array.isArray(target) ? target.join(', ') : target}.`
+        : '';
       return `${defaultMessage} in table ${model}. ${fieldInfo} ${targetInfo}`.trim();
     };
 
@@ -42,124 +47,126 @@ export class ErrorHandlerService {
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2002: () => {
-        const target = error.meta?.target as string | string[] | undefined;
-        const model = String(error.meta?.modelName || 'record');
+        const target = error.meta?.['target'] as string | string[] | undefined;
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Unique constraint violation';
         const message = formatMessage(defaultMessage, model, undefined, target);
         return this.createErrorResponse(HttpStatus.CONFLICT, message, context, error);
       },
       P2003: () => {
-        const model = String(error.meta?.modelName || 'record');
-        const field = error.meta?.field as string | string[] | undefined;
+        const model = String(error.meta?.['modelName'] || 'record');
+        const field = error.meta?.['field'] as string | string[] | undefined;
         const defaultMessage = 'Foreign key constraint failed';
         const message = formatMessage(defaultMessage, model, field);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2004: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Constraint violation';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, context, error);
       },
       P2005: () => {
-        const model = String(error.meta?.modelName || 'record');
-        const field = error.meta?.field as string | string[] | undefined;
+        const model = String(error.meta?.['modelName'] || 'record');
+        const field = error.meta?.['field'] as string | string[] | undefined;
         const defaultMessage = 'Invalid data format';
         const message = formatMessage(defaultMessage, model, field);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2006: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Invalid filter for query';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2007: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Data validation error';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2010: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Failed to execute raw query';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, context, error);
       },
       P2011: () => {
-        const model = String(error.meta?.modelName || 'record');
-        const field = error.meta?.field as string | string[] | undefined;
+        const model = String(error.meta?.['modelName'] || 'record');
+        const field = error.meta?.['field'] as string | string[] | undefined;
         const defaultMessage = 'Field cannot be null';
         const message = formatMessage(defaultMessage, model, field);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2012: () => {
-        const model = String(error.meta?.modelName || 'record');
-        const field = error.meta?.field as string | string[] | undefined;
+        const model = String(error.meta?.['modelName'] || 'record');
+        const field = error.meta?.['field'] as string | string[] | undefined;
         const defaultMessage = 'Missing value for field';
         const message = formatMessage(defaultMessage, model, field);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2014: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Foreign key constraint failed during cascading delete';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2015: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Record not found';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.NOT_FOUND, message, context, error);
       },
       P2016: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Query interpretation failed';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, context, error);
       },
       P2017: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Required records not found';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.NOT_FOUND, message, context, error);
       },
       P2021: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Table or view not found in database';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, context, error);
       },
       P2022: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Required column not found in database';
-        const column = error.meta?.column as string | string[] | undefined;
+        const column = error.meta?.['column'] as string | string[] | undefined;
         const message = formatMessage(defaultMessage, model, column);
         return this.createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, context, error);
       },
       P2023: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Database schema inconsistency';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, context, error);
       },
       P2025: () => {
-        const target = error.meta?.target as string | string[] | undefined;
-        const model = String(error.meta?.modelName || 'record');
-        const defaultMessage = String(error.meta?.cause || 'The requested record was not found');
-        const column = error.meta?.column as string | string[] | undefined;
+        const target = error.meta?.['target'] as string | string[] | undefined;
+        const model = String(error.meta?.['modelName'] || 'record');
+        const defaultMessage = String(
+          error.meta?.['cause'] || 'The requested record was not found'
+        );
+        const column = error.meta?.['column'] as string | string[] | undefined;
         const message = formatMessage(defaultMessage, model, column, target);
         return this.createErrorResponse(HttpStatus.NOT_FOUND, message, context, error);
       },
       P2030: () => {
-        const model = String(error.meta?.modelName || 'record');
-        const field = error.meta?.field as string | string[] | undefined;
+        const model = String(error.meta?.['modelName'] || 'record');
+        const field = error.meta?.['field'] as string | string[] | undefined;
         const defaultMessage = 'Invalid JSON value for field';
         const message = formatMessage(defaultMessage, model, field);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
       },
       P2033: () => {
-        const model = String(error.meta?.modelName || 'record');
+        const model = String(error.meta?.['modelName'] || 'record');
         const defaultMessage = 'Query returned too many results';
         const message = formatMessage(defaultMessage, model);
         return this.createErrorResponse(HttpStatus.BAD_REQUEST, message, context, error);
@@ -167,12 +174,14 @@ export class ErrorHandlerService {
     };
 
     const errorHandler =
-      errorHandlers[error.code] ||
+      (errorHandlers as any)[error.code] ||
       (() => {
-        const model = String(error.meta?.modelName || 'record');
-        const field = error.meta?.field as string | string[] | undefined;
-        const target = error.meta?.target as string | string[] | undefined;
-        const defaultMessage = String(error.meta?.cause || 'An unexpected database error occurred');
+        const model = String(error.meta?.['modelName'] || 'record');
+        const field = error.meta?.['field'] as string | string[] | undefined;
+        const target = error.meta?.['target'] as string | string[] | undefined;
+        const defaultMessage = String(
+          error.meta?.['cause'] || 'An unexpected database error occurred'
+        );
         const message = formatMessage(defaultMessage, model, field, target);
         return this.createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, context, error);
       });
@@ -188,7 +197,10 @@ export class ErrorHandlerService {
 
   private handleSocialAuthError(error: any, context: string): ApiResponse<null> {
     if (error.response) {
-      this.logger.error(`Social auth API error in ${context}: ${JSON.stringify(error.response.data)}`, error.stack);
+      this.logger.error(
+        `Social auth API error in ${context}: ${JSON.stringify(error.response.data)}`,
+        error.stack
+      );
       return this.createErrorResponse(
         HttpStatus.BAD_REQUEST,
         error.message || 'Error occurred during social authentication.',
@@ -208,7 +220,12 @@ export class ErrorHandlerService {
   private handleUnhandledError(error: any, context: string): ApiResponse<null> {
     this.logger.error(`Unhandled error in ${context}: ${error.message}`, error.stack);
     if (error.message.includes('Failed to send SMS')) {
-      return this.createErrorResponse(HttpStatus.FORBIDDEN, 'SMS service is restricted for trial accounts. Please verify the recipient number or upgrade your Twilio account.', context, error);
+      return this.createErrorResponse(
+        HttpStatus.FORBIDDEN,
+        'SMS service is restricted for trial accounts. Please verify the recipient number or upgrade your Twilio account.',
+        context,
+        error
+      );
     }
     return this.createErrorResponse(
       HttpStatus.INTERNAL_SERVER_ERROR,
@@ -218,7 +235,13 @@ export class ErrorHandlerService {
     );
   }
 
-  private createErrorResponse(statusCode: HttpStatus, message: string, context: string, error: any, data?: any): ApiResponse<any> {
+  private createErrorResponse(
+    statusCode: HttpStatus,
+    message: string,
+    _context: string,
+    _error: any,
+    data?: any
+  ): ApiResponse<any> {
     return {
       statusCode,
       status: 'Failure',
@@ -231,17 +254,27 @@ export class ErrorHandlerService {
   private formatErrorString(error: string): string {
     return error
       .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   }
 
   // Additional helper methods for specific error types
   handleAuthError(error: any, context: string): ApiResponse<null> {
     if (error.response && error.response.status === 401) {
-      return this.createErrorResponse(HttpStatus.UNAUTHORIZED, error.message || 'Unauthorized access.', context, error);
+      return this.createErrorResponse(
+        HttpStatus.UNAUTHORIZED,
+        error.message || 'Unauthorized access.',
+        context,
+        error
+      );
     }
     if (error.response && error.response.status === 403) {
-      return this.createErrorResponse(HttpStatus.FORBIDDEN, error.message || 'Access denied.', context, error);
+      return this.createErrorResponse(
+        HttpStatus.FORBIDDEN,
+        error.message || 'Access denied.',
+        context,
+        error
+      );
     }
     return this.createErrorResponse(
       HttpStatus.INTERNAL_SERVER_ERROR,
@@ -275,18 +308,38 @@ export class ErrorHandlerService {
   }
 
   handleUnauthorized(error: any, context: string): ApiResponse<null> {
-    return this.createErrorResponse(HttpStatus.UNAUTHORIZED, error.message || 'Unauthorized.', context, error);
+    return this.createErrorResponse(
+      HttpStatus.UNAUTHORIZED,
+      error.message || 'Unauthorized.',
+      context,
+      error
+    );
   }
 
-  handleForbidden(error: any, context: string): ApiResponse<null> { 
+  handleForbidden(error: any, context: string): ApiResponse<null> {
     if (error.message.includes('authorization grant is invalid')) {
-      return this.createErrorResponse(HttpStatus.FORBIDDEN, 'Email service is temporarily unavailable. We are working on a fix.', context, error)
+      return this.createErrorResponse(
+        HttpStatus.FORBIDDEN,
+        'Email service is temporarily unavailable. We are working on a fix.',
+        context,
+        error
+      );
     }
-    return this.createErrorResponse(HttpStatus.FORBIDDEN, error.message || 'Forbidden.', context, error);
+    return this.createErrorResponse(
+      HttpStatus.FORBIDDEN,
+      error.message || 'Forbidden.',
+      context,
+      error
+    );
   }
 
   handleNotFound(error: any, context: string): ApiResponse<null> {
-    return this.createErrorResponse(HttpStatus.NOT_FOUND, error.message || 'Not found.', context, error);
+    return this.createErrorResponse(
+      HttpStatus.NOT_FOUND,
+      error.message || 'Not found.',
+      context,
+      error
+    );
   }
 
   handleInternalServerError(error: any, context: string): ApiResponse<null> {

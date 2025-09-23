@@ -4,7 +4,6 @@ import { HealthService } from '@health/health.service';
 
 describe('HealthController', () => {
   let controller: HealthController;
-  let service: HealthService;
 
   const mockService = {
     checkHealth: jest.fn(),
@@ -17,7 +16,6 @@ describe('HealthController', () => {
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
-    service = module.get<HealthService>(HealthService);
   });
 
   it('should be defined', () => {
@@ -25,7 +23,12 @@ describe('HealthController', () => {
   });
 
   it('should delegate to healthService.checkHealth()', async () => {
-    const result = { status: 'ok' };
+    const result = {
+      statusCode: 200,
+      status: 'Success',
+      message: 'Health check completed',
+      data: { status: 'ok' },
+    };
     mockService.checkHealth.mockResolvedValue(result);
 
     const response = await controller.check();

@@ -9,6 +9,8 @@ import {
 } from '@nestjs/terminus';
 import { RedisHealthIndicator } from '@redis/redis.health';
 import { DBService } from '@db/db.service';
+import { CustomHttpHealthIndicator } from '@health/custom-http-health.indicator';
+import { CustomDatabaseHealthIndicator } from '@health/custom-database-health.indicator';
 
 describe('HealthService', () => {
   let service: HealthService;
@@ -22,6 +24,8 @@ describe('HealthService', () => {
   const mockDB = {}; // Not called directly
   const mockDisk = { checkStorage: jest.fn() };
   const mockMemory = { checkHeap: jest.fn() };
+  const mockCustomHttp = { pingCheck: jest.fn() };
+  const mockCustomDatabase = { isHealthy: jest.fn() };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -34,6 +38,8 @@ describe('HealthService', () => {
         { provide: DBService, useValue: mockDB },
         { provide: DiskHealthIndicator, useValue: mockDisk },
         { provide: MemoryHealthIndicator, useValue: mockMemory },
+        { provide: CustomHttpHealthIndicator, useValue: mockCustomHttp },
+        { provide: CustomDatabaseHealthIndicator, useValue: mockCustomDatabase },
       ],
     }).compile();
 
@@ -47,8 +53,8 @@ describe('HealthService', () => {
   it('should call health.check with all indicators', async () => {
     const expectedResult = { status: 'ok', info: {}, error: {}, details: {} };
 
-    mockHealthCheckService.check.mockImplementation(async (indicators) => {
-      await Promise.all(indicators.map((fn) => fn()));
+    mockHealthCheckService.check.mockImplementation(async indicators => {
+      await Promise.all(indicators.map((fn: () => Promise<any>) => fn()));
       return expectedResult;
     });
 

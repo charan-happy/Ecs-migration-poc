@@ -17,7 +17,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T
       }
 
       return next.handle().pipe(
-        map((data) => {
+        map(data => {
           const response = context.switchToHttp().getResponse();
           return {
             statusCode: data?.statusCode || response?.statusCode || 200,
@@ -32,12 +32,12 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T
 
     if (context.getType().toString() === 'graphql') {
       return next.handle().pipe(
-        map((data) => ({
+        map(data => ({
           statusCode: 200,
           status: 'Success',
           message: 'Request successful',
           data: data,
-          error: null,
+          error: '',
         }))
       );
     }

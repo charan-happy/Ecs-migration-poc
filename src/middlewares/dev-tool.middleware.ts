@@ -1,7 +1,7 @@
 // TODO: Uncomment and implement the middleware logic as needed
 
 // import { RoleType } from '@common/enums/role-type.enum';
-import { RouteNames } from '@common/route-names';
+// import { RouteNames } from '@common/route-names';
 // import { CustomJwtService } from '@common/services/jwt.service';
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from 'express';
 export class DevToolsMiddleware implements NestMiddleware {
   // constructor(private readonly jwtService: CustomJwtService) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
+  async use(_req: Request, _res: Response, next: NextFunction) {
     // let token = req.cookies?.['admin_sid'];
 
     // if (!token && !req.headers['authorization']) {

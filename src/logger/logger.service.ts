@@ -2,7 +2,6 @@ import { getTraceContext } from '@common/helpers/trace-context.util';
 import { EnvConfig } from '@config/env.config';
 import { Injectable, Logger, Scope } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import * as CircuitBreaker from 'opossum';
 import { createLogger, format, transports, Logger as WinstonLogger } from 'winston';
 import * as DailyRotateFile from 'winston-daily-rotate-file';
@@ -14,7 +13,7 @@ export class LoggerService {
   private lokiPort: number = 3100;
   private logQueue: any[] = [];
   private flushInterval = 5000; // 5 seconds
-  private breaker: CircuitBreaker;
+  private breaker!: CircuitBreaker;
   private circuitOptions = {
     timeout: 5000, // If the function takes longer than 5 seconds, it will timeout
     errorThresholdPercentage: 50, // If 50% of requests fail, the breaker will open
@@ -26,7 +25,7 @@ export class LoggerService {
     const environment = this.configService.get<string>('NODE_ENV');
     const lokiAPI = this.configService.get<string>('LOKI_API_TOKEN');
     const lokiPORT = this.configService.get<string>('LOKI_PORT');
-    this.lokiPort = parseInt(lokiPORT, 10);
+    this.lokiPort = parseInt(lokiPORT || '3100', 10);
     const isProduction = environment === 'production';
     const isStaging = environment === 'staging';
     const isDevelopment = environment === 'development';
@@ -61,7 +60,7 @@ export class LoggerService {
 
     if (isDevelopment) {
       // Start the log flusher
-      this.startLogFlusher(lokiAPI);
+      this.startLogFlusher(lokiAPI || '');
 
       this.logger.on('data', (log) => {
         this.addToLogQueue(log);
@@ -70,7 +69,7 @@ export class LoggerService {
       // Add SIGTERM listener only once (Handle graceful shutdown)
       if (!LoggerService.sigtermListenerAdded) {
         process.on('SIGTERM', async () => {
-          await this.sendBatchToPromtail(lokiAPI); // Flush any remaining logs
+          await this.sendBatchToPromtail(lokiAPI || ''); // Flush any remaining logs
           process.exit(0);
         });
         LoggerService.sigtermListenerAdded = true; // Mark the listener as added
@@ -113,24 +112,27 @@ export class LoggerService {
     try {
       this.logQueue = []; // Clear the queue after copying
 
-      await axios.post(
-        `http://127.0.0.1:${this.lokiPort}/loki/api/v1/push`,
-        {
+      const response = await fetch(`http://127.0.0.1:${this.lokiPort}/loki/api/v1/push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${lokiAPI}`,
+        },
+        body: JSON.stringify({
           streams: [
             {
               stream: { service: 'backend' },
               values: logsToSend.map((log) => [`${Date.now() * 1e6}`, log.message]),
             },
           ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${lokiAPI}`,
-          },
-        }
-      );
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     } catch (error) {
-      Logger.error('Failed to send batch logs to Promtail:', error.message);
+      Logger.error('Failed to send batch logs to Promtail:', (error as Error).message);
       // Optionally, re-add logs to queue if sending failed
       this.logQueue.push(...logsToSend);
       throw error; // Throw error to let the circuit breaker handle it

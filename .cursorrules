@@ -1,0 +1,234 @@
+# NestJS Boilerplate - Cursor Rules
+
+## Project Overview
+This is a comprehensive NestJS boilerplate application with:
+- TypeScript, Prisma ORM, Redis, BullMQ queues
+- OpenTelemetry tracing, Prometheus metrics, Winston logging
+- Health checks, API documentation, background jobs
+- Rate limiting, caching, error handling
+
+## Architecture & SOLID Principles
+
+### 1. Single Responsibility Principle (SRP)
+- Each class should have one reason to change
+- Controllers handle HTTP requests/responses only
+- Services contain business logic only
+- Repositories handle data access only
+- Use separate classes for different concerns
+
+### 2. Open/Closed Principle (OCP)
+- Use interfaces and abstract classes for extensibility
+- Implement dependency injection for loose coupling
+- Create base classes for common functionality
+- Use decorators and interceptors for cross-cutting concerns
+
+### 3. Liskov Substitution Principle (LSP)
+- Implement interfaces consistently
+- Use abstract base classes for shared behavior
+- Ensure derived classes can replace base classes
+
+### 4. Interface Segregation Principle (ISP)
+- Create focused, specific interfaces
+- Avoid fat interfaces with unused methods
+- Use composition over inheritance
+
+### 5. Dependency Inversion Principle (DIP)
+- Depend on abstractions, not concretions
+- Use dependency injection throughout
+- Create interfaces for external dependencies
+
+## NestJS-Specific Guidelines
+
+### Module Structure
+- Each feature should have its own module
+- Use `@Global()` sparingly, only for truly global services
+- Import modules in logical order: config → database → services → controllers
+- Keep modules focused and cohesive
+
+### Controller Best Practices
+- Use DTOs for request/response validation
+- Apply appropriate decorators (@Get, @Post, etc.)
+- Use Swagger decorators for API documentation
+- Keep controllers thin - delegate to services
+- Use proper HTTP status codes
+- Implement proper error handling
+
+### Service Layer
+- Contain all business logic
+- Use dependency injection for dependencies
+- Return consistent response formats
+- Handle errors appropriately
+- Use interfaces for service contracts
+
+### DTOs and Validation
+- Use class-validator decorators for validation
+- Create separate DTOs for requests and responses
+- Use class-transformer for data transformation
+- Implement proper validation pipes
+
+### Database & Prisma
+- Use Prisma service for database operations
+- Create repository pattern for complex queries
+- Use transactions for multi-table operations
+- Implement proper error handling for database operations
+- Use Prisma migrations for schema changes
+
+### Background Jobs & Queues
+- Use BullMQ for background processing
+- Implement proper job processors
+- Handle job failures gracefully
+- Use dead letter queues for failed jobs
+- Implement job retry logic
+
+### Error Handling
+- Use custom exception classes
+- Implement global exception filters
+- Log errors appropriately
+- Return user-friendly error messages
+- Use proper HTTP status codes
+
+### Logging & Monitoring
+- Use Winston for structured logging
+- Implement correlation IDs for request tracing
+- Use OpenTelemetry for distributed tracing
+- Implement health checks for all services
+- Use Prometheus for metrics collection
+
+## Code Style & Conventions
+
+### File Naming
+- Use kebab-case for files: `user.service.ts`
+- Use PascalCase for classes: `UserService`
+- Use camelCase for methods and variables
+- Use UPPER_CASE for constants
+
+### Import Organization
+- Group imports: external → internal → relative
+- Use path aliases defined in tsconfig.json
+- Sort imports alphabetically
+- Use named imports when possible
+
+### TypeScript Best Practices
+- Use strict type checking
+- Avoid `any` type - use proper typing
+- Use interfaces for object shapes
+- Use enums for constants
+- Use generics for reusable code
+- Implement proper error types
+
+### Testing
+- Write unit tests for services
+- Write integration tests for controllers
+- Use mocks for external dependencies
+- Test error scenarios
+- Aim for high test coverage
+
+## Security Guidelines
+- Use Helmet for security headers
+- Implement proper CORS configuration
+- Use rate limiting to prevent abuse
+- Validate all input data
+- Sanitize user input
+- Use proper authentication/authorization
+- Implement CSRF protection where needed
+
+## Performance Guidelines
+- Use caching appropriately (Redis)
+- Implement database query optimization
+- Use pagination for large datasets
+- Implement proper indexing
+- Use compression for responses
+- Monitor performance metrics
+
+## Environment & Configuration
+- Use environment variables for configuration
+- Use Joi for environment validation
+- Separate config for different environments
+- Use ConfigService for accessing config
+- Never commit sensitive data
+
+## Documentation
+- Use Swagger/OpenAPI for API documentation
+- Document complex business logic
+- Use JSDoc for public methods
+- Keep README updated
+- Document environment setup
+
+## Common Patterns
+
+### Repository Pattern
+```typescript
+@Injectable()
+export class UserRepository {
+  constructor(private prisma: PrismaService) {}
+  
+  async findById(id: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+}
+```
+
+### Service Pattern
+```typescript
+@Injectable()
+export class UserService {
+  constructor(private userRepository: UserRepository) {}
+  
+  async getUserById(id: string): Promise<UserDto> {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return plainToClass(UserDto, user);
+  }
+}
+```
+
+### Controller Pattern
+```typescript
+@Controller('users')
+@ApiTags('Users')
+export class UserController {
+  constructor(private userService: UserService) {}
+  
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  async getUser(@Param('id') id: string): Promise<UserDto> {
+    return this.userService.getUserById(id);
+  }
+}
+```
+
+## Anti-Patterns to Avoid
+- Don't put business logic in controllers
+- Don't use `any` type unnecessarily
+- Don't ignore error handling
+- Don't hardcode configuration values
+- Don't create circular dependencies
+- Don't use synchronous operations for I/O
+- Don't expose internal implementation details
+- Don't skip validation
+- Don't ignore security best practices
+- Don't write untestable code
+
+## Code Quality Checks
+- Run ESLint before committing
+- Run Prettier for code formatting
+- Run tests before pushing
+- Check TypeScript compilation
+- Verify all imports are used
+- Ensure proper error handling
+- Validate all DTOs
+- Check for security vulnerabilities
+
+## Development Workflow
+1. Create feature branch
+2. Implement changes following guidelines
+3. Write/update tests
+4. Run linting and formatting
+5. Run tests
+6. Create pull request
+7. Code review
+8. Merge to main
+
+Remember: This boilerplate follows enterprise-grade patterns. Always consider scalability, maintainability, and security when making changes.

@@ -4,17 +4,17 @@ import { IsNumber } from 'class-validator';
 export class PaginationDetailsDto {
   @ApiProperty({ description: 'Current page number' })
   @IsNumber()
-  pageNo: number;
+  pageNo!: number;
 
   @ApiProperty({ description: 'Number of items per page' })
   @IsNumber()
-  pageSize: number;
+  pageSize!: number;
 
   @ApiProperty({ description: 'Total number of items available' })
   @IsNumber()
-  totalCount: number;
+  totalCount!: number;
 
   @ApiProperty({ description: 'Total number of pages available' })
   @IsNumber()
-  totalPages: number;
+  totalPages!: number;
 }

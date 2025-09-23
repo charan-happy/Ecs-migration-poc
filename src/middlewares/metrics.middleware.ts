@@ -47,8 +47,8 @@ export class MetricsMiddleware implements NestMiddleware {
         this.metricsService.incrementApiErrorCounter(method, urlPath, status);
       }
 
-      this.metricsService.incrementUserAgentCounter(userAgent);
-      this.metricsService.incrementRefererCounter(referer);
+      this.metricsService.incrementUserAgentCounter(userAgent || '');
+      this.metricsService.incrementRefererCounter(referer || '');
       this.metricsService.incrementMobileWebReqCounter(isMobile);
     });
 

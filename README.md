@@ -1,183 +1,337 @@
 # 🌐 **NestJS Boilerplate Documentation**
 
-Welcome to the **NestJS Boilerplate** documentation. This guide will help you set up, run, and extend your NestJS application with essential modules and integrations.
+Welcome to the **NestJS Boilerplate** - a comprehensive, production-ready NestJS application with essential modules and integrations.
 
 ---
 
-## 🚧 **Setup**
+## 🚧 **Prerequisites**
 
-Before you start, ensure that you have the following prerequisites:
-
-- **Node.js**: Minimum version should be **18 & above**.
-- **Docker CLI**, **Docker Compose**, and **Colima** (or an equivalent Docker engine - **Rancher Desktop** is one alternative to **Docker Desktop**) installed on your system.
-- Start the Docker engine using:
-  
-  ```bash
-  colima start
-  ```
-
-- Create a `.env` file in the root of your project. Copy the contents from `.env.example` and replace them with actual values to avoid runtime issues.
-- We have integarted background workers using **Redis Queues**, If you wish not to use any background workers, The respective directory & it's dependencies can be removed directly. `/redis` directory is still needed for cacheing.
-
-> 💡 **Note:** We have integrated **Prometheus**, **Grafana**, **Loki**, and **Promtail** for Application Performance Monitoring (APM) and centralized logging to help you monitor and visualize metrics in your NestJS application.
-
----
-
-## 🚀 **Running the App**
-
-Follow these steps to start your application:
+- **Node.js**: 20.0.0+
+- **pnpm**: 8.0.0+ (package manager)
+- **Docker CLI** & **Docker Compose**
+- **Colima** (or equivalent Docker engine)
 
 ```bash
-# 1️⃣ Install dependencies
-$ yarn install
+# Start Docker engine
+colima start
 
-# 2️⃣ Start Docker services
-$ yarn db:dev:up
-
-# 3️⃣ Run Migrations & Seeds
-$ yarn prisma:setup
-
-# 4️⃣ Start the NestJS app in development mode
-$ yarn start:dev
-
-# 5️⃣ Stop Docker services
-$ yarn db:dev:rm
+# Setup environment (copies .env.example to .env)
+pnpm run setup
+# OR run directly: node scripts/setup.js
+# OR force recreate: pnpm run setup:force
 ```
 
 ---
 
-## 🧪 **Automatic Testing with Dredd**
-
-Once your backend is fully running and Swagger is accessible, you can use **Dredd** to automate API testing against your OpenAPI specification. This ensures that your API endpoints behave as expected and conform to the documented contract.
-
-### Running Dredd Tests
-
-After the backend server is up and Swagger is accessible, simply run:
+## 🚀 **Quick Start**
 
 ```bash
-npm run test
+# Install dependencies
+pnpm install
+
+# Setup environment (if not done already)
+pnpm run setup
+
+# Start all services (Docker + Database + App)
+pnpm local:up
+
+# Or step by step:
+pnpm db:dev:up          # Start Docker services
+pnpm prisma:setup       # Setup database
+pnpm start:dev          # Start NestJS app
 ```
 
-This command will:
-
-1. **Generate the OpenAPI Specification** by fetching the Swagger JSON from `http://localhost:${PORT}/api-json`.
-2. **Execute Dredd Tests** using this OpenAPI spec to validate that the endpoints' responses match the expected definitions in the specification.
-
-> **Note:** Ensure your server is fully running and accessible before starting the tests, as Dredd needs to interact with the live API.
-
-### Viewing Test Results
-
-- Test results are displayed directly in the terminal, showing which endpoints passed or failed.
-- If an endpoint’s response doesn’t match the specification (e.g., due to headers, status codes, or body content differences), Dredd will mark it as failed and provide details on discrepancies.
-- `apiary`'s temporary public reporting is also enabled to view the test results for 24 hours & share across team.
-
-For more detailed reports, we can configure Dredd to save or display results in a specific format or integrate it with your CI pipeline.
+**Application URLs:**
+- **Main App**: http://localhost:3000
+- **API Docs**: http://localhost:3000/api
+- **Health Check**: http://localhost:3000/v1/health
+- **Dev Tools**: http://localhost:3000/v1/dev-tools
+- **Tracing Status**: http://localhost:3000/v1/tracing/status
 
 ---
 
-## 📊 **Accessing Monitoring Tools**
+## 🛠 **Available Scripts**
 
-Once the Docker services are up, you can access the following tools:
+### **Setup & Development**
+```bash
+pnpm setup              # Copy .env.example to .env (or node setup.js)
+pnpm start:dev          # Start in development mode
+pnpm start:prod         # Start in production mode
+pnpm build              # Build the application
+pnpm type-check         # Run TypeScript type checking
+```
 
-- 🔹 **Prometheus**: Available at `http://localhost:${PROMETHEUS_PORT}`. It collects and stores metrics exposed by the NestJS app.
-- 🔹 **Grafana**: Available at `http://localhost:${GRAFANA_PORT}`. Visualize your app metrics by setting up Grafana dashboards.
-  
-  > **Login credentials for Grafana**:
-  > - **Username**: `admin`
-  > - **Password**: `{GRAFANA_ADMIN_PASSWORD}` (from your `.env` file)
+### **Code Quality**
+```bash
+pnpm lint               # Lint and fix code
+pnpm lint:check         # Lint without fixing
+pnpm format             # Format code with Prettier
+pnpm pre-commit         # Run all pre-commit checks
+```
 
-### 🏡 **Setting up Prometheus and Loki in Grafana:**
+### **Testing**
+```bash
+# Jest Tests
+pnpm test               # Run unit tests
+pnpm test:watch         # Run tests in watch mode
+pnpm test:coverage      # Run tests with coverage
+pnpm test:e2e           # Run E2E tests
 
-1. Go to **Configuration** → **Data Sources**.
-2. Click **Add Data Source**, select **Prometheus**, and set the URL to `http://prometheus:9090`. Save and test the connection.
-3. Click **Add Data Source** again, select **Loki**, and set the URL to `http://loki:3100`. Save and test the connection.
-4. To create a log panel in Grafana, navigate to **Create** → **Dashboard** → **Add New Panel**, and select **Loki** as the data source to query application logs.
-5. Here's the sample [log dashboard](https://grafana.com/grafana/dashboards/13359-logs/) which can be used to copy template ID and import in Grafana.
+# Playwright Tests
+pnpm test:playwright:unit        # Unit tests
+pnpm test:playwright:functional  # Functional tests
+pnpm test:playwright:e2e         # E2E tests
+pnpm test:playwright:ui          # Interactive UI
 
----
+# Load Testing
+pnpm test:artillery:quick        # Quick load test
+pnpm test:artillery:health       # Health check load test
+pnpm test:artillery:stress       # Stress test
+```
 
-## 📃 **Logs**
+### **Database**
+```bash
+pnpm prisma:studio      # Open Prisma Studio
+pnpm prisma:migrate     # Run migrations
+pnpm prisma:generate    # Generate Prisma client
+pnpm prisma:reset       # Reset database
+```
 
-- Application logs are stored in the `/logs` directory.
-- The logger captures details like **request paths**, **methods**, **status codes**, and **response times**.
-- With **Promtail** and **Loki** integration, logs are shipped to **Grafana**, where you can view and analyze them effectively.
-
----
-
-## 📈 **Monitoring Metrics**
-
-Access application metrics via the `/metrics` endpoint of your running NestJS application. **Prometheus** collects these metrics, and **Grafana** visualizes them for you.
-
----
-
-## ⚡ **Cache Interceptor**
-
-The `ClientControlledCacheInterceptor` efficiently handles response caching based on `Cache-Control` headers provided by the client, using MD5 hashing to generate unique cache keys.
-
----
-
-## 🐝 **Swagger Documentation**
-
-Swagger provides auto-generated REST API documentation at `http://localhost:${PORT}/api`. This documentation is based on the decorators used in the application and will auto-update as your app evolves.
-
----
-
-## 🔑 **Hashing with Bcrypt**
-
-For secure password handling, the boilerplate integrates `bcrypt` for hashing:
-
-- **hash(data)**: Hashes passwords before storing them in the database.
-- **compare(data, encrypted)**: Validates the password by comparing hashed data.
-
----
-
-## 🧩 **Adding New Modules**
-
-You can find reusable modules in our 📦 **[CoE's Project Sample](https://git.geekyants.com/geekyants/coe-grp/project-sample/-/tree/main/Monolith/apps/backend?ref_type=heads)** repository. Follow the steps below to add new modules to your NestJS application:
-
-### 🌟 **Step-by-Step Process to Add Modules**
-
-1. **Identify Your Required Module** 🔍
-   - For instance, if you want to add an **SMS** module, locate the `sms/` folder in the CoE's project sample repository under the `src/` directory.
-
-2. **Copy the Module** 📂
-   - Copy the entire `sms/` folder and place it into the `src/` directory of your NestJS project.
-
-3. **Update Environment Variables** 🌐
-   - Refer to the `.env.example` file in the sample repository for any required environment variables.
-   - Example variables for SMS:
-
-     ```bash
-     # SMS Configuration
-     TWILIO_ACCOUNT_SID=ACXXXXXXXXX
-     TWILIO_AUTH_TOKEN=XXXXXXXXX
-     TWILIO_SOURCE_NUMBER="+16518675309"
-     ```
-
-   - Add these to your `.env` file with actual values.
-
-4. **Configure the Module** ⚙️
-   - Add the environment variables to your `env.config.ts` file inside the `config/` module.
-   - Register them in `env-config.module.ts` and validate them using Joi in the `validationSchema` object.
-
-5. **Manage Dependencies** 🫡
-   - If the module has dependencies (e.g., **DB**), copy the corresponding module from the project sample, keeping only relevant data.
-
-6. **Database Configuration** 🛠️
-   - Ensure the DB is set up correctly by adding the necessary DB image in your `docker-compose.yml` file, especially if there isn’t an existing connection URL.
-
-Following these steps will integrate your new module seamlessly within your NestJS application! 🎉
+### **Docker & Infrastructure**
+```bash
+pnpm db:dev:up          # Start Docker services
+pnpm db:dev:rm          # Stop and remove containers
+pnpm generate:prometheus # Generate Prometheus config
+```
 
 ---
 
-## 📚 **Module Integration Guides**
+## 📊 **Monitoring & Observability**
 
-Below are links to detailed guides for integrating common modules:
+### **Dashboards**
+- **Grafana**: http://localhost:3001 (admin/admin)
+- **Prometheus**: http://localhost:9090
+- **Jaeger**: http://localhost:16686
+- **Loki**: http://localhost:3100
 
-1. 🔑 **[Auth Module](https://coe.geekyants.com/docs/backend/Monolith/NestJs/Authentication#how-to-add-in-existing-application)**
-2. 🔒 **[Authorization Module](https://coe.geekyants.comdocs/backend/Monolith/NestJs/Authorization#how-to-add-in-existing-application)**
-3. 📤 **[Media Upload Module](https://coe.geekyants.com/docs/backend/Monolith/NestJs/FileStorage#how-to-add-in-existing-application)**
-4. 🛠 **[Email Module](https://coe.geekyants.com/docs/backend/Monolith/NestJs/Email#how-to-add-in-existing-application)**
-5. 📱 **[SMS Module](https://coe.geekyants.com/docs/backend/Monolith/NestJs/Sms#how-to-add-in-existing-application)**
+### **Health Checks**
+- **Health API**: `/v1/health` - Application health status
+- **Health UI**: `/v1/health/health-ui` - Visual health dashboard
+- **Metrics**: `/v1/metrics` - Prometheus metrics
 
-These guides provide detailed steps on how to add the module, what dependencies are needed, and how to configure everything.
+### **Distributed Tracing**
+- **Jaeger UI**: http://localhost:16686 - Trace visualization
+- **Tracing Status**: `/v1/tracing/status` - OpenTelemetry status
+- **Test Trace**: `/v1/tracing/test` - Generate test trace
+- **Custom Trace**: `/v1/tracing/custom` - Generate custom trace
+
+---
+
+## ⚙️ **Configuration**
+
+### **Environment Variables**
+```ini
+# Application
+NODE_ENV=development
+PORT=3000
+GLOBAL_API_PREFIX=v1
+
+# Database
+DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/postgres"
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=postgres
+
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+
+# JWT
+JWT_SECRET=supersecretjwtkey
+JWT_EXPIRATION_TIME=3600s
+
+# Monitoring
+OTEL_SERVICE_NAME=nestjs-app
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
+```
+
+### **Docker Services**
+- **PostgreSQL**: Database (port 5432)
+- **Redis**: Caching & Queues (port 6379)
+- **Prometheus**: Metrics collection (port 9090)
+- **Grafana**: Metrics visualization (port 3001)
+- **Jaeger**: Distributed tracing (port 16686)
+- **Loki**: Log aggregation (port 3100)
+
+---
+
+## 🧪 **Testing**
+
+### **Test Types**
+- **Unit Tests**: Individual component testing (Jest + Playwright)
+- **Functional Tests**: API workflow testing (Playwright)
+- **E2E Tests**: Complete user journey testing (Playwright)
+- **Load Tests**: Performance testing (Artillery)
+
+### **Test Structure**
+```
+tests/
+├── unit/           # Unit tests
+├── functional/     # Functional tests
+├── e2e/           # End-to-end tests
+├── fixtures/      # Test fixtures
+└── utils/         # Test utilities
+```
+
+---
+
+## 🔍 **Distributed Tracing**
+
+### **OpenTelemetry Integration**
+The application includes comprehensive distributed tracing using OpenTelemetry and Jaeger:
+
+**Features:**
+- ✅ **Automatic HTTP Request Tracing** - All API calls are automatically traced
+- ✅ **Custom Trace Generation** - Manual trace creation for specific operations
+- ✅ **Jaeger Integration** - Traces exported to Jaeger for visualization
+- ✅ **Span Attributes** - Rich metadata attached to each trace
+- ✅ **Error Tracking** - Failed requests are properly traced with error details
+
+### **Tracing Endpoints**
+```bash
+# Check OpenTelemetry status
+curl http://localhost:3000/v1/tracing/status
+
+# Generate a test trace
+curl http://localhost:3000/v1/tracing/test
+
+# Generate custom trace with data
+curl -X POST http://localhost:3000/v1/tracing/custom \
+  -H "Content-Type: application/json" \
+  -d '{"operation": "custom-operation", "duration": 2000}'
+```
+
+### **Trace Flow**
+1. **HTTP Requests** → **TracingInterceptor** → **OpenTelemetry SDK** → **Jaeger**
+2. **Manual Traces** → **TracingController** → **OpenTelemetry SDK** → **Jaeger**
+3. **Auto Instrumentation** → **NestJS/Express** → **OpenTelemetry SDK** → **Jaeger**
+
+### **Jaeger UI**
+- **URL**: http://localhost:16686
+- **Service Name**: `nestjs-app`
+- **Operations**: `POST`, `GET`, `test-trace-endpoint`, `custom-operation-*`
+
+---
+
+## 🏗 **Architecture**
+
+### **Core Features**
+- **NestJS Framework**: TypeScript-based Node.js framework
+- **Prisma ORM**: Type-safe database access
+- **Redis**: Caching and background job queues
+- **BullMQ**: Background job processing
+- **OpenTelemetry**: Distributed tracing
+- **Prometheus**: Metrics collection
+- **Winston**: Structured logging
+
+### **Project Structure**
+```
+src/
+├── api/            # API controllers and routes
+│   ├── health/     # Health check endpoints
+│   ├── metrics/    # Metrics endpoints
+│   ├── tracing/    # Tracing endpoints
+│   └── dev-tools/  # Development tools
+├── background/     # Background jobs and cron tasks
+├── common/         # Shared utilities and decorators
+├── config/         # Configuration modules
+├── db/            # Database schema and migrations
+├── interceptors/  # Request/response interceptors
+├── logger/        # Logging service
+├── middlewares/   # Custom middlewares
+├── otel/          # OpenTelemetry configuration
+└── redis/         # Redis configuration
+```
+
+---
+
+## 🔧 **Development Guidelines**
+
+### **Code Quality**
+- **TypeScript**: Strict mode enabled
+- **ESLint**: Code linting with TypeScript rules
+- **Prettier**: Code formatting
+- **SOLID Principles**: Clean architecture patterns
+
+### **Testing**
+- **Coverage**: Aim for high test coverage
+- **Types**: Unit, functional, and E2E tests
+- **Performance**: Load testing with Artillery
+
+### **Database**
+- **Migrations**: Use Prisma migrations
+- **Seeding**: Database seeding for development
+- **Studio**: Prisma Studio for data management
+
+---
+
+## 🚨 **Troubleshooting**
+
+### **Common Issues**
+
+**Database Connection Error:**
+```bash
+# The app has graceful fallback for database issues
+# Check Docker containers are running
+docker ps
+
+# Restart database
+pnpm db:dev:rm && pnpm db:dev:up
+```
+
+**Port Already in Use:**
+```bash
+# Check what's using the port
+lsof -i :3000
+
+# Kill the process
+kill -9 <PID>
+```
+
+**Dependencies Issues:**
+```bash
+# Clean install
+pnpm clean:all
+pnpm install
+```
+
+**Setup Command Issues:**
+```bash
+# If pnpm setup doesn't work, run directly:
+node setup.js
+```
+
+**Tracing Issues:**
+```bash
+# Check if Jaeger is running
+docker ps | grep jaeger
+
+# Check OpenTelemetry status
+curl http://localhost:3000/v1/tracing/status
+
+# View traces in Jaeger UI
+open http://localhost:16686
+```
+
+---
+
+## 📚 **Additional Resources**
+
+- [NestJS Documentation](https://docs.nestjs.com/)
+- [Prisma Documentation](https://www.prisma.io/docs/)
+- [Playwright Testing](https://playwright.dev/)
+- [Artillery Load Testing](https://artillery.io/)
+- [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
+- [Jaeger Documentation](https://www.jaegertracing.io/docs/)
+
+---

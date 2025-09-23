@@ -30,7 +30,7 @@ import { DeadLetterQueueEvents } from '@dead-letter-queue/dead-letter-queue.even
       name: QueueName.DEAD_LETTER,
       adapter: BullMQAdapter,
       options: {
-        readOnlyMode: process.env.NODE_ENV === 'production' || false,
+        readOnlyMode: process.env['NODE_ENV'] === 'production' || false,
         displayName: 'Dead Letter Queue',
         description: 'Queue for failed jobs from other queues',
       },

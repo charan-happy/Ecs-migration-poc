@@ -34,7 +34,7 @@ export class NotificationQueueConfig {
       name: QueueName.NOTIFICATION,
       adapter: BullMQAdapter,
       options: {
-        readOnlyMode: process.env.NODE_ENV === 'production' || false,
+        readOnlyMode: process.env['NODE_ENV'] === 'production' || false,
         displayName: 'Notifications Queue',
         description: 'Queue for sending notifications',
       },

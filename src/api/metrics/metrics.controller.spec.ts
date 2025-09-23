@@ -12,7 +12,6 @@ jest.mock('prom-client', () => ({
 
 describe('MetricsController', () => {
   let controller: MetricsController;
-  let service: MetricsService;
 
   const mockMetricsService = {
     incrementHttpRequests: jest.fn(),
@@ -26,7 +25,6 @@ describe('MetricsController', () => {
     }).compile();
 
     controller = module.get<MetricsController>(MetricsController);
-    service = module.get<MetricsService>(MetricsService);
   });
 
   describe('getDefaultMetrics', () => {
@@ -54,7 +52,9 @@ describe('MetricsController', () => {
       await controller.getDefaultMetrics(mockRes);
       expect(register.metrics).toHaveBeenCalled();
       expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.send).toHaveBeenCalledWith(ResponseUtil.error('Failed to retrieve metrics', 500, null));
+      expect(mockRes.send).toHaveBeenCalledWith(
+        ResponseUtil.error('Failed to retrieve metrics', 500, null)
+      );
     });
   });
 });

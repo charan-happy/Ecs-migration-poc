@@ -11,13 +11,21 @@ export const RedisProvider = {
     const redisPassword = configService.get<string>('REDIS_PASSWORD');
     const redisTlsEnabled = configService.get<boolean>('REDIS_TLS_ENABLED');
 
-    return new Redis({
-      host: redisHost,
-      port: redisPort,
-      password: redisPassword,
-      tls: redisTlsEnabled ? {} : undefined,
+    const config: any = {
+      host: redisHost || 'localhost',
+      port: redisPort || 6379,
       maxRetriesPerRequest: null,
-    });
+    };
+
+    if (redisPassword) {
+      config.password = redisPassword;
+    }
+
+    if (redisTlsEnabled) {
+      config.tls = {};
+    }
+
+    return new Redis(config);
   },
   inject: [ConfigService],
 };

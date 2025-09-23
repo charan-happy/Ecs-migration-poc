@@ -16,10 +16,11 @@ import { EnvConfig } from '@config/env.config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ErrorHandlerService } from '@common/services/error-handler.service';
 import { TraceIdInterceptor } from '@interceptors/trace-id.interceptor';
+import { TracingInterceptor } from '@interceptors/tracing.interceptor';
 import { copyStaticAssets } from '@common/helpers/copy-static-assets';
 
 async function bootstrap() {
-  const environment = process.env.NODE_ENV || 'development';
+  const environment = process.env['NODE_ENV'] || 'development';
   const isProd = environment === 'production';
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     snapshot: false, // true - Enable Debugging
@@ -34,15 +35,15 @@ async function bootstrap() {
   app.use(helmet());
 
   const configService = app.get(ConfigService<EnvConfig>);
-  const corsOrigins =
-    configService.get<string>('CORS_ORIGINS')?.split(',') || [];
+  const corsOrigins = configService.get<string>('CORS_ORIGINS')?.split(',') || [];
 
   // Enable CORS with specific settings
   app.enableCors({
     origin: corsOrigins,
     credentials: true, // Include credentials in CORS requests
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization, x-forwarded-for, x-client-ip, x-real-ip, referer, user-agent, x-forwarded-host, x-forwarded-user-agent, referrer, x-forwarded-referer, x-forwarded-origin, origin, host',
+    allowedHeaders:
+      'Content-Type, Accept, Authorization, x-forwarded-for, x-client-ip, x-real-ip, referer, user-agent, x-forwarded-host, x-forwarded-user-agent, referrer, x-forwarded-referer, x-forwarded-origin, origin, host',
   });
 
   // Limit Request Size to 1MB
@@ -57,7 +58,7 @@ async function bootstrap() {
   if (!isProd) {
     const config = new DocumentBuilder()
       .setTitle('Project/App Name APIs')
-      .setDescription("API documentation for the backend services of Project/App Name")
+      .setDescription('API documentation for the backend services of Project/App Name')
       .setVersion('1.0')
       // .addBearerAuth()
       .build();
@@ -70,7 +71,7 @@ async function bootstrap() {
   // Use global filters and pipes
   const errorHandler = app.get(ErrorHandlerService);
   app.useGlobalFilters(new HttpExceptionFilter(errorHandler));
-  app.useGlobalInterceptors(new TraceIdInterceptor());
+  app.useGlobalInterceptors(new TraceIdInterceptor(), new TracingInterceptor());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // Automatically remove non-whitelisted properties
@@ -91,7 +92,7 @@ async function bootstrap() {
 
   // Default Route - Show Friendly Info Page
   const expressApp = app.getHttpAdapter().getInstance() as any;
-  expressApp.get(['/', '/v1', '/dev-tools', '/v1/queues'], (_, res: Response) => {
+  expressApp.get(['/', '/v1', '/dev-tools', '/v1/queues'], (_: any, res: Response) => {
     res.status(200).render('default', {
       app: 'Project/App Name',
       environment,
@@ -102,12 +103,12 @@ async function bootstrap() {
     });
   });
   if (!isProd) {
-    expressApp.get('/robots.txt', (_, res) =>
-      res.type('text/plain').send('User-agent: *\nDisallow: /'),
+    expressApp.get('/robots.txt', (_: any, res: any) =>
+      res.type('text/plain').send('User-agent: *\nDisallow: /')
     );
   }
 
-  const port = process.env.PORT || 3000;
+  const port = process.env['PORT'] || 3000;
   await app.listen(port, '0.0.0.0');
   const appUrl = await app.getUrl();
   Logger.log(`App is running on ${appUrl}`, 'Project/App Name');

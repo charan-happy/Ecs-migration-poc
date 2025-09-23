@@ -34,7 +34,7 @@ export class EmailQueueConfig {
       name: QueueName.EMAIL,
       adapter: BullMQAdapter,
       options: {
-        readOnlyMode: process.env.NODE_ENV === 'production' || false,
+        readOnlyMode: process.env['NODE_ENV'] === 'production' || false,
         displayName: 'Email Queue',
         description: 'Queue for sending emails',
       },

@@ -16,8 +16,8 @@ export interface PaginationDetails {
 }
 
 // Parse default values as integers
-const DEFAULT_PAGE = parseInt(configService.get<string>('DEFAULT_PAGE'), 10);
-const DEFAULT_PAGE_SIZE = parseInt(configService.get<string>('DEFAULT_PAGE_SIZE'), 10);
+const DEFAULT_PAGE = parseInt(configService.get<string>('DEFAULT_PAGE') || '1', 10);
+const DEFAULT_PAGE_SIZE = parseInt(configService.get<string>('DEFAULT_PAGE_SIZE') || '10', 10);
 
 export function calculateSkipAndTake(params: PaginationParams): { skip: number; take: number } {
   const pageNo = params.pageNo ? params.pageNo : DEFAULT_PAGE;

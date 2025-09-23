@@ -19,7 +19,6 @@ export class ClientControlledCacheInterceptor implements NestInterceptor {
    * @returns Observable<any> - The response, either from cache or freshly generated.
    */
   async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
-    const _request = context.switchToHttp().getRequest();
     const cacheControl = this.getCacheControl(context);
 
     // If the cache control is 'no-store',
@@ -36,7 +35,7 @@ export class ClientControlledCacheInterceptor implements NestInterceptor {
 
     // Handle the request and cache the response if cache control permits.
     return next.handle().pipe(
-      tap((response) => {
+      tap(response => {
         // Cache the response unless cache control is 'no-cache'.
         if (cacheControl !== 'no-cache') {
           // Determine the TTL(milliseconds) based on cache-control

@@ -26,7 +26,7 @@ export class EmailQueueService {
       // };
       // await this.mailService.sendEmail(emailData);
     } catch (error) {
-      this.logger.error(`Failed to send OTP email: ${error.message}`);
+      this.logger.error(`Failed to send OTP email: ${(error as Error).message}`);
       throw error;
     }
   }
