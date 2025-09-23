@@ -61,7 +61,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     } catch (parseError) {
       Logger.error(
-        `[ErrorID: ${errorId}] Failed to construct error response: ${parseError.message}`,
+        `[ErrorID: ${errorId}] Failed to construct error response: ${(parseError as Error).message}`,
       );
       errorResponse = {
         statusCode: 500,
@@ -77,7 +77,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (host.getType() === 'http') {
       if (!response.headersSent) {
-        return response.status(errorResponse.statusCode).json(errorResponse);
+        return response.status(errorResponse.statusCode || 500).json(errorResponse);
       } else {
         Logger.warn(
           `[ErrorID: ${errorId}] Attempted to send response after headers were already sent for ${context}`,

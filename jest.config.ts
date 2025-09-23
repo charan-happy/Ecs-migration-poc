@@ -10,7 +10,7 @@ const config: Config = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
-  transformIgnorePatterns: ['node_modules/(?!(@redis|cache-manager-redis-yet)/)'],
+  transformIgnorePatterns: ['node_modules/(?!(@redis|cache-manager-redis-store)/)'],
   moduleNameMapper: {
     '^@common/(.*)$': '<rootDir>/common/$1',
     '^@middlewares/(.*)$': '<rootDir>/middlewares/$1',

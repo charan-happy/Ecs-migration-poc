@@ -7,44 +7,54 @@ const envConfig = registerAs(
   'env',
   () =>
     ({
-      PORT: parseInt(process.env.PORT, 10),
-      NODE_ENV: process.env.NODE_ENV,
-      CORS_ORIGINS: process.env.CORS_ORIGINS,
-      PROMETHEUS_PORT: parseInt(process.env.PROMETHEUS_PORT, 10),
+      PORT: parseInt(process.env['PORT'] || '3000', 10),
+      NODE_ENV: process.env['NODE_ENV'] || 'development',
+      CORS_ORIGINS: process.env['CORS_ORIGINS'] || '*',
+      PROMETHEUS_PORT: parseInt(process.env['PROMETHEUS_PORT'] || '9090', 10),
       PROMETHEUS_PUSH_GATEWAY_PORT: parseInt(
-        process.env.PROMETHEUS_PUSH_GATEWAY_PORT,
-        10,
+        process.env['PROMETHEUS_PUSH_GATEWAY_PORT'] || '9091',
+        10
       ),
-      PROMTAIL_PORT: parseInt(process.env.PROMTAIL_PORT, 10),
-      NODE_EXPORTER_PORT: parseInt(process.env.NODE_EXPORTER_PORT, 10),
-      NODE_EXPORTER_TARGET: process.env.NODE_EXPORTER_TARGET,
-      NESTJS_METRICS_TARGET: process.env.NESTJS_METRICS_TARGET,
-      GRAFANA_PORT: parseInt(process.env.GRAFANA_PORT, 10),
-      GRAFANA_ADMIN_PASSWORD: process.env.GRAFANA_ADMIN_PASSWORD,
-      LOKI_PORT: parseInt(process.env.LOKI_PORT, 10),
-      LOKI_API_TOKEN: process.env.LOKI_API_TOKEN,
-      OTLP_PORT: parseInt(process.env.OTLP_PORT, 10),
-      OTEL_SERVICE_NAME: process.env.OTEL_SERVICE_NAME,
-      OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
-      JAEGER_PORT: parseInt(process.env.JAEGER_PORT, 10),
-      JAEGER_COLLECTOR_PORT: parseInt(process.env.JAEGER_COLLECTOR_PORT, 10),
-      JAGER_URL: process.env.JAGER_URL,
-      REDIS_HOST: process.env.REDIS_HOST,
-      REDIS_PORT: parseInt(process.env.REDIS_PORT, 10),
-      REDIS_PASSWORD: process.env.REDIS_PASSWORD,
-      REDIS_TLS_ENABLED: process.env.REDIS_TLS_ENABLED.toString().toLowerCase() === 'true',
-      POSTGRES_DB: process.env.POSTGRES_DB,
-      POSTGRES_USER: process.env.POSTGRES_USER,
-      POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
-      POSTGRES_HOST: process.env.POSTGRES_HOST,
-      POSTGRES_PORT: parseInt(process.env.POSTGRES_PORT, 10),
-      DATABASE_URL: process.env.DATABASE_URL,
-      DEFAULT_PAGE: parseInt(process.env.DEFAULT_PAGE, 10),
-      DEFAULT_PAGE_SIZE: parseInt(process.env.DEFAULT_PAGE_SIZE, 10),
-      GRAFANA_URL: process.env.GRAFANA_URL,
-      APP_LOGS_URL: process.env.APP_LOGS_URL,
-      DEV_DOCS_URL: process.env.DEV_DOCS_URL,
-      SERVICES_HEALTH_URL: process.env.SERVICES_HEALTH_URL,
+      PROMTAIL_PORT: parseInt(process.env['PROMTAIL_PORT'] || '9080', 10),
+      NODE_EXPORTER_PORT: parseInt(process.env['NODE_EXPORTER_PORT'] || '9100', 10),
+      NODE_EXPORTER_TARGET: process.env['NODE_EXPORTER_TARGET'] || '',
+      NESTJS_METRICS_TARGET: process.env['NESTJS_METRICS_TARGET'] || '',
+      GRAFANA_PORT: parseInt(process.env['GRAFANA_PORT'] || '3001', 10),
+      GRAFANA_ADMIN_PASSWORD: process.env['GRAFANA_ADMIN_PASSWORD'] || '',
+      LOKI_PORT: parseInt(process.env['LOKI_PORT'] || '3100', 10),
+      LOKI_API_TOKEN: process.env['LOKI_API_TOKEN'] || '',
+      OTLP_PORT: parseInt(process.env['OTLP_PORT'] || '4317', 10),
+      OTEL_SERVICE_NAME: process.env['OTEL_SERVICE_NAME'] || '',
+      OTEL_EXPORTER_OTLP_ENDPOINT: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] || '',
+      JAEGER_PORT: parseInt(process.env['JAEGER_PORT'] || '16686', 10),
+      JAEGER_COLLECTOR_PORT: parseInt(process.env['JAEGER_COLLECTOR_PORT'] || '14268', 10),
+      JAGER_URL: process.env['JAGER_URL'] || '',
+      REDIS_HOST: process.env['REDIS_HOST'] || '',
+      REDIS_PORT: parseInt(process.env['REDIS_PORT'] || '6379', 10),
+      REDIS_PASSWORD: process.env['REDIS_PASSWORD'] || '',
+      REDIS_TLS_ENABLED: (process.env['REDIS_TLS_ENABLED'] || 'false').toLowerCase() === 'true',
+      POSTGRES_DB: process.env['POSTGRES_DB'] || 'postgres',
+      POSTGRES_USER: process.env['POSTGRES_USER'] || 'postgres',
+      POSTGRES_PASSWORD: process.env['POSTGRES_PASSWORD'] || 'postgres',
+      POSTGRES_HOST: process.env['POSTGRES_HOST'] || '127.0.0.1',
+      POSTGRES_PORT: parseInt(process.env['POSTGRES_PORT'] || '5432', 10),
+      DATABASE_URL: (() => {
+        const dbUrl = process.env['DATABASE_URL'];
+        // If DATABASE_URL contains template variables, construct it from individual components
+        if (dbUrl && dbUrl.includes('${')) {
+          return `postgresql://${process.env['POSTGRES_USER'] || 'postgres'}:${process.env['POSTGRES_PASSWORD'] || 'postgres'}@${process.env['POSTGRES_HOST'] || '127.0.0.1'}:${process.env['POSTGRES_PORT'] || '5432'}/${process.env['POSTGRES_DB'] || 'postgres'}`;
+        }
+        return (
+          dbUrl ||
+          `postgresql://${process.env['POSTGRES_USER'] || 'postgres'}:${process.env['POSTGRES_PASSWORD'] || 'postgres'}@${process.env['POSTGRES_HOST'] || '127.0.0.1'}:${process.env['POSTGRES_PORT'] || '5432'}/${process.env['POSTGRES_DB'] || 'postgres'}`
+        );
+      })(),
+      DEFAULT_PAGE: parseInt(process.env['DEFAULT_PAGE'] || '1', 10),
+      DEFAULT_PAGE_SIZE: parseInt(process.env['DEFAULT_PAGE_SIZE'] || '10', 10),
+      GRAFANA_URL: process.env['GRAFANA_URL'] || '',
+      APP_LOGS_URL: process.env['APP_LOGS_URL'] || '',
+      DEV_DOCS_URL: process.env['DEV_DOCS_URL'] || '',
+      SERVICES_HEALTH_URL: process.env['SERVICES_HEALTH_URL'] || '',
     }) as EnvConfig
 );
 

@@ -2,7 +2,7 @@ import { ResponseUtil } from '@common/helpers/response.utils';
 import { RouteNames } from '@common/route-names';
 import { Controller, Get, Header, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiExcludeController, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { register } from 'prom-client';
 
 @Controller(RouteNames.METRICS)

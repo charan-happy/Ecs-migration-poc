@@ -43,8 +43,8 @@ export class BackgroundServiceManager {
       );
     } catch (error) {
       this.logger.error(
-        `Error adding job ${jobName} to queue ${queue.name}: ${error.message}`,
-        error.stack,
+        `Error adding job ${jobName} to queue ${queue.name}: ${(error as Error).message}`,
+        (error as Error).stack,
         'BackgroundServiceManager',
       );
       throw error;

@@ -26,7 +26,7 @@ export class NotificationQueueService {
       //   data.data,
       // );
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${error.message}`);
+      this.logger.error(`Failed to send notification: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -44,7 +44,7 @@ export class NotificationQueueService {
       //   data.data,
       // );
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${error.message}`);
+      this.logger.error(`Failed to send notification: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -56,7 +56,7 @@ export class NotificationQueueService {
       );
       // await this.notificationService.sendNotificationToUsers(data);
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${error.message}`);
+      this.logger.error(`Failed to send notification: ${(error as Error).message}`);
       throw error;
     }
   }

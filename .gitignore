@@ -2,23 +2,38 @@
 /dist
 /node_modules
 
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.pnpm-store/
+.pnpm-debug.log*
+
 # Logs
 logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
-yarn.lock
 yarn-error.log*
 lerna-debug.log*
 
-# Others
+# Generated files
 /src/Db/@generated/*
 /src/Db/@generated
 **/@generated
 /client_sdk
 /data
 /openapi.json
+*.generated.*
+artillery_report_*.json
+test-results.json
+test-results.xml
+playwright-report/
+test-results/
+*.tsbuildinfo
+.eslintcache
+.nyc_output
 
 # OS
 .DS_Store

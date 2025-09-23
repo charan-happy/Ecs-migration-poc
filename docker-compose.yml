@@ -77,15 +77,16 @@ services:
       - monitoring
 
   postgres-db:
-    image: 'postgres:latest'
+    image: 'postgres:17'
     container_name: 'postgres-db'
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
       TZ: UTC
     ports:
-      - '${POSTGRES_PORT}:5432'
+      - '5432:5432'
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -117,9 +118,9 @@ services:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
     ports:
-      - "${JAEGER_PORT}:16686"            # UI
-      - "${JAEGER_COLLECTOR_PORT}:14268"  # HTTP collector
-      - "${OTLP_PORT}:4318"               # OTLP HTTP endpoint
+      - '${JAEGER_PORT}:16686' # UI
+      - '${JAEGER_COLLECTOR_PORT}:14268' # HTTP collector
+      - '${OTLP_PORT}:4318' # OTLP HTTP endpoint
     networks:
       - monitoring
     restart: unless-stopped

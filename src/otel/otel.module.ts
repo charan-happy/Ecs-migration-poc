@@ -6,5 +6,6 @@ import { OtelService } from './otel.service';
 @Module({
   imports: [ConfigModule],
   providers: [OtelService],
+  exports: [OtelService],
 })
 export class OtelModule {}

@@ -45,8 +45,8 @@ export class EmailProcessor extends WorkerHost {
 
       return result;
     } catch (error) {
-      logString_ = `Failed to process job ${job.id} of type ${job.name} with error ${error?.message}`;
-      this.logger.error(logString_, error?.stack, 'EmailProcessor');
+      logString_ = `Failed to process job ${job.id} of type ${job.name} with error ${(error as Error)?.message}`;
+      this.logger.error(logString_, (error as Error)?.stack, 'EmailProcessor');
       if (typeof job.log === 'function') job.log(logString_);
       throw error;
     }
@@ -80,7 +80,7 @@ export class EmailProcessor extends WorkerHost {
     // Push the failed job to the Dead Letter Queue
     await this.dlqService.addFailedJobToDLQ({
       originalQueueName: QueueName.EMAIL,
-      originalJobId: job.id,
+      originalJobId: job.id || '',
       originalJobName: job.name,
       originalJobData: job.data,
       failedReason: job?.failedReason,
@@ -97,7 +97,7 @@ export class EmailProcessor extends WorkerHost {
     // Considering stalled jobs to DLQ if they are consistently stalling
     await this.dlqService.addFailedJobToDLQ({
       originalQueueName: QueueName.EMAIL,
-      originalJobId: job.id,
+      originalJobId: job.id || '',
       originalJobName: job.name,
       originalJobData: job.data,
       failedReason: `Job stalled for too long. Current attempts: ${job?.attemptsMade}`,
@@ -114,7 +114,7 @@ export class EmailProcessor extends WorkerHost {
     // Errors to DLQ as well
     await this.dlqService.addFailedJobToDLQ({
       originalQueueName: QueueName.EMAIL,
-      originalJobId: job.id,
+      originalJobId: job.id || '',
       originalJobName: job.name,
       originalJobData: job.data,
       failedReason: `Processor error: ${error.message}`,
