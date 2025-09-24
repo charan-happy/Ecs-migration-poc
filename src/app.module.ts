@@ -1,4 +1,4 @@
-import { BackgroundModule } from '@bg/background.module';
+import { QueueUIModule } from '@bg/queue-ui.module';
 import { DEFAULT_JOB_OPTIONS, QueuePrefix } from '@bg/constants/job.constant';
 import { EnvConfigModule } from '@config/env-config.module';
 import { DBModule } from '@db/db.module';
@@ -11,7 +11,7 @@ import { MetricsMiddleware } from '@middlewares/metrics.middleware';
 import { BullModule } from '@nestjs/bullmq';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
-import { Logger, MiddlewareConsumer, Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 // import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -35,7 +35,6 @@ const configService = new ConfigService<EnvConfig>();
 const queueModule = BullModule.forRootAsync({
   imports: [RedisModule],
   useFactory: (redisClient: Redis) => {
-    Logger.log(`Connecting to Redis using predefined client`);
     return {
       prefix: QueuePrefix.SYSTEM, // For grouping queues
       connection: redisClient.options,
@@ -99,13 +98,9 @@ const cacheModule = CacheModule.registerAsync({
     EventEmitterModule.forRoot(),
     RedisModule,
     DBModule,
-
-    // Background Workers
-    queueModule,
-    BackgroundModule,
-
-    // OpenTelemetry
     OtelModule,
+    queueModule,
+    QueueUIModule,
 
     // APIs
     MetricsModule,

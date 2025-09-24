@@ -1,11 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import {
-  QueueName,
-  JobName,
-  DEFAULT_JOB_OPTIONS,
-} from '@bg/constants/job.constant';
+import { QueueName, JobName, DEFAULT_JOB_OPTIONS } from '@bg/constants/job.constant';
 import {
   INotificationJob,
   INotificationTopicJob,
@@ -14,22 +10,17 @@ import {
 } from '@bg/interfaces/job.interface';
 
 @Injectable()
-export class BackgroundServiceManager {
-  private readonly logger = new Logger(BackgroundServiceManager.name);
+export class AddingJobsToQueueManager {
+  private readonly logger = new Logger(AddingJobsToQueueManager.name);
   constructor(
     @InjectQueue(QueueName.EMAIL) private emailQueue: Queue,
-    @InjectQueue(QueueName.NOTIFICATION) private notificationQueue: Queue,
+    @InjectQueue(QueueName.NOTIFICATION) private notificationQueue: Queue
   ) {}
 
-  async addJob<T>(
-    queue: Queue,
-    jobName: JobName,
-    data: T,
-    options?: any,
-  ): Promise<void> {
+  async addJob<T>(queue: Queue, jobName: JobName, data: T, options?: any): Promise<void> {
     this.logger.debug(
       `Adding job ${jobName} to queue ${queue.name} with data: ${JSON.stringify(data)}`,
-      'BackgroundServiceManager',
+      'AddingJobsToQueueManager'
     );
 
     try {
@@ -39,50 +30,38 @@ export class BackgroundServiceManager {
       });
       this.logger.debug(
         `Job ${job.id} added successfully to queue ${queue.name}`,
-        'BackgroundServiceManager',
+        'AddingJobsToQueueManager'
       );
     } catch (error) {
       this.logger.error(
         `Error adding job ${jobName} to queue ${queue.name}: ${(error as Error).message}`,
         (error as Error).stack,
-        'BackgroundServiceManager',
+        'AddingJobsToQueueManager'
       );
       throw error;
     }
   }
 
-  async addSendNotificationToDeviceJob(
-    jobName: JobName,
-    data: INotificationJob,
-  ): Promise<void> {
+  async addSendNotificationToDeviceJob(jobName: JobName, data: INotificationJob): Promise<void> {
     return this.addJob(this.notificationQueue, jobName, data);
   }
 
   async addSendNotificationToTopicJob(
     jobName: JobName,
-    data: INotificationTopicJob,
+    data: INotificationTopicJob
   ): Promise<void> {
     return this.addJob(this.notificationQueue, jobName, data);
   }
 
-  async addSendNotificationJob(
-    jobName: JobName,
-    data: ISendNotificationJob,
-  ): Promise<void> {
+  async addSendNotificationJob(jobName: JobName, data: ISendNotificationJob): Promise<void> {
     return this.addJob(this.notificationQueue, jobName, data);
   }
 
-  async addRegisterationOtpEmailJob(
-    jobName: JobName,
-    data: IOtpEmailJob,
-  ): Promise<void> {
+  async addRegisterationOtpEmailJob(jobName: JobName, data: IOtpEmailJob): Promise<void> {
     return this.addJob(this.emailQueue, jobName, data);
   }
 
-  async addForgotPasswordEmailJob(
-    jobName: JobName,
-    data: IOtpEmailJob,
-  ): Promise<void> {
+  async addForgotPasswordEmailJob(jobName: JobName, data: IOtpEmailJob): Promise<void> {
     return this.addJob(this.emailQueue, jobName, data);
   }
 }

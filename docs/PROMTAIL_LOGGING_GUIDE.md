@@ -23,10 +23,12 @@ Promtail is a log aggregation agent that collects logs from your NestJS applicat
 ## 🏗️ **Component Details**
 
 ### **1. NestJS Application (Log Source)**
+
 - **Log Location**: `/logs/application-YYYY-MM-DD.log`
 - **Log Format**: JSON with structured data
 - **Log Levels**: info, warn, error, debug
 - **Example Log Entry**:
+
   ```json
   {
     "level": "info",
@@ -38,6 +40,7 @@ Promtail is a log aggregation agent that collects logs from your NestJS applicat
   ```
 
 ### **2. Promtail (Log Collector)**
+
 - **Configuration**: `promtail-config.yml`
 - **Watches**: `/logs/*.log` directory
 - **Sends to**: `http://loki:3100/loki/api/v1/push`
@@ -45,6 +48,7 @@ Promtail is a log aggregation agent that collects logs from your NestJS applicat
 - **Status**: ✅ Running and collecting logs
 
 ### **3. Loki (Log Storage)**
+
 - **Configuration**: `loki-config.dev.yml`
 - **Storage**: Filesystem-based (development)
 - **API Port**: 3100
@@ -52,7 +56,8 @@ Promtail is a log aggregation agent that collects logs from your NestJS applicat
 - **Status**: ✅ Running and receiving logs
 
 ### **4. Grafana (Log Visualization)**
-- **Web UI**: http://localhost:3001
+
+- **Web UI**: <http://localhost:3001>
 - **Username**: admin
 - **Password**: admin
 - **Data Source**: Loki (configured)
@@ -63,6 +68,7 @@ Promtail is a log aggregation agent that collects logs from your NestJS applicat
 ## 🧪 **Testing the Logging Flow**
 
 ### **Step 1: Generate Logs**
+
 ```bash
 # Make API calls to generate logs
 curl http://localhost:3000/v1/health
@@ -74,6 +80,7 @@ tail -f logs/application-$(date +%Y-%m-%d).log
 ```
 
 ### **Step 2: Verify Promtail Collection**
+
 ```bash
 # Check Promtail logs
 docker logs promtail --tail 10
@@ -83,6 +90,7 @@ curl http://localhost:9080/targets
 ```
 
 ### **Step 3: Check Loki Storage**
+
 ```bash
 # Check Loki is receiving logs
 curl http://localhost:3100/ready
@@ -92,7 +100,8 @@ curl "http://localhost:3100/loki/api/v1/query_range?query={job=\"varlogs\"}&star
 ```
 
 ### **Step 4: View in Grafana**
-1. **Open**: http://localhost:3001
+
+1. **Open**: <http://localhost:3001>
 2. **Login**: admin / admin
 3. **Go to**: Explore → Select Loki data source
 4. **Query**: `{job="varlogs"}`
@@ -102,6 +111,7 @@ curl "http://localhost:3100/loki/api/v1/query_range?query={job=\"varlogs\"}&star
 ## 🔧 **Configuration Files**
 
 ### **Promtail Configuration** (`promtail-config.yml`)
+
 ```yaml
 server:
   http_listen_port: 9080
@@ -119,6 +129,7 @@ scrape_configs:
 ```
 
 ### **Loki Configuration** (`loki-config.dev.yml`)
+
 ```yaml
 auth_enabled: false
 server:
@@ -135,6 +146,7 @@ ingester:
 ## 📊 **Grafana Dashboard Setup**
 
 ### **1. Add Loki Data Source**
+
 1. Go to **Configuration** → **Data Sources**
 2. Click **Add data source**
 3. Select **Loki**
@@ -142,12 +154,14 @@ ingester:
 5. Click **Save & Test**
 
 ### **2. Create Log Dashboard**
+
 1. Go to **Dashboards** → **New Dashboard**
 2. Add **Logs** panel
 3. Set query: `{job="varlogs"}`
 4. Configure time range and filters
 
 ### **3. Useful Queries**
+
 ```logql
 # All logs
 {job="varlogs"}
@@ -169,17 +183,20 @@ ingester:
 ### **No Logs in Grafana?**
 
 1. **Check Promtail Status**
+
    ```bash
    docker logs promtail
    ```
 
 2. **Verify Log Files**
+
    ```bash
    ls -la logs/
    tail logs/application-$(date +%Y-%m-%d).log
    ```
 
 3. **Check Loki Connection**
+
    ```bash
    curl http://localhost:3100/ready
    ```
@@ -246,4 +263,4 @@ curl "http://localhost:3100/loki/api/v1/query?query={job=\"varlogs\"}"
 
 ---
 
-**Your logging pipeline is fully operational! 🎉**
+Your logging pipeline is fully operational! 🎉

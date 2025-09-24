@@ -1,8 +1,8 @@
 import { IOtpEmailJob } from '@bg/interfaces/job.interface';
-// import { EmailService } from '@email/email.service';
-// import { SendEmailDto } from '@email/dto/send-email.dto';
-// import { TemplateDataDTO } from '@email/dto/template-data.dto';
-// import { AdminEmailIDs } from '@email/enums/email-template.enum';
+// import { EmailService } from '@services/email/email.service';
+// import { SendEmailDto } from '@services/email/dto/send-email.dto';
+// import { TemplateDataDTO } from '@services/email/dto/template-data.dto';
+// import { AdminEmailIDs } from '@services/email/enums/email-template.enum';
 import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()

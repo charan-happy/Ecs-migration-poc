@@ -9,12 +9,14 @@ This guide explains how to use Jaeger distributed tracing with your NestJS appli
 ## 🗄️ **Jaeger Database & Storage**
 
 ### **Current Setup (Development)**
+
 - **Storage Type**: In-memory storage
 - **Database**: None (data stored in RAM)
 - **Persistence**: Data lost on container restart
 - **Performance**: Fast, suitable for development
 
 ### **Production Setup**
+
 - **Storage Options**:
   - **Cassandra**: High performance, scalable
   - **Elasticsearch**: Full-text search capabilities
@@ -23,6 +25,7 @@ This guide explains how to use Jaeger distributed tracing with your NestJS appli
 - **Configuration**: Set via environment variables
 
 ### **Docker Configuration**
+
 ```yaml
 jaeger:
   image: jaegertracing/all-in-one:latest
@@ -37,18 +40,22 @@ jaeger:
 ## 🚀 **How Tracing Works**
 
 ### **1. Request Flow**
+
 ```
 HTTP Request → TracingInterceptor → OpenTelemetry → Jaeger → UI
 ```
 
 ### **2. Trace Components**
+
 - **Span**: Individual operation (e.g., HTTP request)
 - **Trace**: Collection of related spans
 - **Attributes**: Metadata about the operation
 - **Context**: Request correlation information
 
 ### **3. Automatic Tracing**
+
 Your application automatically traces:
+
 - All HTTP requests (via `TracingInterceptor`)
 - Health check endpoints
 - Metrics endpoints
@@ -59,18 +66,21 @@ Your application automatically traces:
 ## 🌐 **Accessing Jaeger UI**
 
 ### **Step 1: Open Jaeger**
+
 ```bash
 # Open in your browser
 http://localhost:16686
 ```
 
 ### **Step 2: Find Traces**
+
 1. **Service**: Select `nestjs-app`
 2. **Operation**: Choose specific endpoint (e.g., `GET /v1/health`)
 3. **Time Range**: Select appropriate time window
 4. **Find Traces**: Click the button
 
 ### **Step 3: Analyze Traces**
+
 - **Timeline View**: See request duration and timing
 - **Span Details**: Click on spans for detailed information
 - **Attributes**: View HTTP method, URL, status codes, etc.
@@ -81,12 +91,14 @@ http://localhost:16686
 ## 🧪 **Testing Tracing**
 
 ### **Quick Test Script**
+
 ```bash
 # Run the test script
 ./test-tracing.sh
 ```
 
 ### **Manual Testing**
+
 ```bash
 # 1. Health Check (creates trace)
 curl http://localhost:3000/v1/health
@@ -108,12 +120,14 @@ curl http://localhost:3000/v1/tracing/status
 ## 📊 **What You'll See in Jaeger**
 
 ### **Trace Information**
+
 - **Trace ID**: Unique identifier for the request
 - **Duration**: Total request processing time
 - **Status**: Success or error status
 - **Service**: `nestjs-app`
 
 ### **Span Attributes**
+
 - `http.method`: GET, POST, etc.
 - `http.url`: Request URL
 - `http.status_code`: Response status
@@ -122,6 +136,7 @@ curl http://localhost:3000/v1/tracing/status
 - `http.response_time_ms`: Processing time
 
 ### **Custom Attributes**
+
 - `service.name`: Application name
 - `service.version`: Version number
 - `http.request_id`: Request correlation ID (if present)
@@ -131,6 +146,7 @@ curl http://localhost:3000/v1/tracing/status
 ## 🔧 **Tracing Configuration**
 
 ### **Environment Variables**
+
 ```bash
 # OpenTelemetry Configuration
 OTEL_SERVICE_NAME=nestjs-app
@@ -143,6 +159,7 @@ OTLP_PORT=4318
 ```
 
 ### **Code Configuration**
+
 - **TracingInterceptor**: Automatically traces HTTP requests
 - **OtelService**: Manages OpenTelemetry initialization
 - **Custom Traces**: Created via `/v1/tracing/custom` endpoint
@@ -168,6 +185,7 @@ OTLP_PORT=4318
    - Check Docker port mappings
 
 ### **Debug Commands**
+
 ```bash
 # Check Jaeger container
 docker logs jaeger
@@ -184,6 +202,7 @@ curl http://localhost:4318/v1/traces
 ## 📈 **Production Considerations**
 
 ### **Storage Options**
+
 1. **Cassandra** (Recommended)
    - High performance
    - Scalable
@@ -200,6 +219,7 @@ curl http://localhost:4318/v1/traces
    - Limited scalability
 
 ### **Configuration Changes**
+
 ```yaml
 # Production Jaeger with Cassandra
 jaeger:
@@ -241,4 +261,4 @@ jaeger:
 
 ---
 
-**Happy Tracing! 🚀**
+Happy Tracing! 🚀
