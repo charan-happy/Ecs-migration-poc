@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-// import { NotificationService } from '@notification/notification.service';
+// import { NotificationService } from '@services/notification/notification.service';
 import {
   INotificationJob,
   INotificationTopicJob,
@@ -16,7 +16,7 @@ export class NotificationQueueService {
   async sendNotificationToDevice(data: INotificationJob): Promise<void> {
     try {
       this.logger.debug(
-        `Sending push notification to ${data.deviceTokens} with subject ${data.subject}, message ${data.message}, url ${data.url}, additional data ${data.data}`,
+        `Sending push notification to ${data.deviceTokens} with subject ${data.subject}, message ${data.message}, url ${data.url}, additional data ${data.data}`
       );
       // await this.notificationService.sendNotificationToDevice(
       //   data.deviceTokens,
@@ -34,7 +34,7 @@ export class NotificationQueueService {
   async sendNotificationToTopic(data: INotificationTopicJob): Promise<void> {
     try {
       this.logger.debug(
-        `Sending push notification topic ${data.topic} with subject ${data.subject}, message ${data.message}, url ${data.url}, additional data ${data.data}`,
+        `Sending push notification topic ${data.topic} with subject ${data.subject}, message ${data.message}, url ${data.url}, additional data ${data.data}`
       );
       // await this.notificationService.sendNotificationToTopic(
       //   data.topic,
@@ -52,7 +52,7 @@ export class NotificationQueueService {
   async sendNotification(data: ISendNotificationJob): Promise<void> {
     try {
       this.logger.debug(
-        `Sending push notification & also adding inapp notification to ${data.user_ids} with subject ${data.subject}, message ${data.message}, url ${data.url}`,
+        `Sending push notification & also adding inapp notification to ${data.user_ids} with subject ${data.subject}, message ${data.message}, url ${data.url}`
       );
       // await this.notificationService.sendNotificationToUsers(data);
     } catch (error) {
