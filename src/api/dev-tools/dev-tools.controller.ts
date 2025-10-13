@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiExcludeController, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 
-@Controller(RouteNames.DEV_TOOLS)
+@Controller({path: RouteNames.DEV_TOOLS, version: '1'})
 @ApiTags('Dev Tools')
 @ApiExcludeController()
 export class DevToolsController {

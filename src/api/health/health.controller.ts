@@ -3,7 +3,7 @@ import { HealthService } from '@health/health.service';
 import { Controller, Get, Render } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-@Controller(RouteNames.HEALTH)
+@Controller({path: RouteNames.HEALTH, version: '1'})
 @ApiTags('Health')
 // @ApiExcludeController()
 export class HealthController {

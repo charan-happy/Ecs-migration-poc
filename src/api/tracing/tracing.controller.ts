@@ -1,13 +1,14 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { OtelService } from '@otel/otel.service';
+import { RouteNames } from '@common/route-names';
 
 @ApiTags('Tracing')
-@Controller('tracing')
+@Controller({path: RouteNames.TRACING, version: '1'})
 export class TracingController {
   constructor(private readonly otelService: OtelService) {}
 
-  @Get('test')
+  @Get(RouteNames.TEST)
   @ApiOperation({ summary: 'Generate a test trace' })
   @ApiResponse({ status: 200, description: 'Test trace generated successfully' })
   async generateTestTrace() {
@@ -43,7 +44,7 @@ export class TracingController {
     });
   }
 
-  @Post('custom')
+  @Post(RouteNames.CUSTOM)
   @ApiOperation({ summary: 'Generate a custom trace with data' })
   @ApiResponse({ status: 200, description: 'Custom trace generated successfully' })
   async generateCustomTrace(@Body() data: { operation: string; duration?: number }) {
@@ -83,7 +84,7 @@ export class TracingController {
     });
   }
 
-  @Get('status')
+  @Get(RouteNames.STATUS)
   @ApiOperation({ summary: 'Get OpenTelemetry status' })
   @ApiResponse({ status: 200, description: 'OpenTelemetry status retrieved successfully' })
   getTracingStatus() {

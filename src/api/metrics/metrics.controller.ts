@@ -5,7 +5,7 @@ import { Response } from 'express';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { register } from 'prom-client';
 
-@Controller(RouteNames.METRICS)
+@Controller({path: RouteNames.METRICS, version: '1'})
 @ApiTags('Metrics')
 // @ApiExcludeController()
 export class MetricsController {
