@@ -17,7 +17,7 @@ This document explains how the core entities in the application are connected an
      │                 │
      ▼                 ▼
 ┌─────────────┐  ┌──────────────────┐
-│ User Roles  │  │  User Clinics    │
+│ User Roles  │  │    Clinics       │
 └──────┬──────┘  └────────┬─────────┘
        │                  │
        │                  │
@@ -25,10 +25,10 @@ This document explains how the core entities in the application are connected an
 ┌─────────┐         ┌────────────┐
 │  Roles  │         │User Clinics
 └────┬────┘         └────┬───────┘
-     │                    │
-     │                    ├──────────────────┐
-     │                    │                  │
-     ▼                    ▼                  ▼
+    │                    │
+    │                    ├──────────────────┐
+    │                    │                  │
+    ▼                    ▼                  ▼
 ┌──────────────────┐ ┌──────────────┐ ┌──────────────┐
 │ Role Permissions │ │ Clinic Roles │ │ Clinic       │
 └────────┬─────────┘ └──────┬───────┘ │ Patients     │
@@ -55,7 +55,7 @@ This document explains how the core entities in the application are connected an
 
 - **Users** can have **one system role** (via `user_roles` table)
 - Each user has a single role assignment (UNIQUE constraint on `user_id`)
-- **Roles** define system-wide access levels (e.g., "admin", "doctor", "nurse")
+- **Roles** define system-wide access levels (e.g., "super_admin", "admin", "clinic_owner")
 - **Roles** have multiple **Permissions** (via `role_permissions` table)
 
 **Example Flow:**
@@ -69,29 +69,26 @@ User (John Doe)
 - `POST /users/:userId/roles` - Assign role to user
 - `GET /users/:userId/roles` - Get user's role and permissions
 - `PATCH /users/:userId/roles` - Update user's role
-- `DELETE /users/:userId/roles` - Remove role from user
 
 ---
 
-### 2. Users & Clinics (Multi-Tenant)
+### 2. Users & Clinics (Single Clinic Per User)
 
 **Connection:** `users` ↔ `user_clinics` ↔ `clinics`
 
-- **Users** can be associated with **multiple clinics** (many-to-many)
-- Each association has a `user_clinical_role` (e.g., "doctor", "nurse", "admin")
-- Unique constraint: one user can only have one association per clinic
-- Clinics can have multiple users
+- Each user belongs to exactly one clinic (foreign key `clinic_id` on the `users` table)
+- Each user has a `user_clinical_role` within their clinic (e.g., "doctor", "nurse", "admin")
+- Clinics can have multiple users assigned to them
 
 **Example Flow:**
 ```
 User (John Doe)
-  → Associated with Clinic A (as "doctor")
-  → Associated with Clinic B (as "senior_doctor")
+  → Belongs to Clinic A with clinical role "doctor"
 ```
+
 
 **API Endpoints:**
 - `POST /users/:userId/clinics` - Associate user with clinic
-- `GET /users/:userId/clinics` - Get all clinics for a user
 - `GET /clinics/:clinicId/users` - Get all users for a clinic
 - `PATCH /users/:userId/clinics/:clinicId` - Update user's role in clinic
 - `DELETE /users/:userId/clinics/:clinicId` - Remove user from clinic
@@ -102,25 +99,27 @@ User (John Doe)
 
 **Connection:** `clinics` ↔ `clinic_roles` ↔ `clinic_role_permissions` ↔ `permissions`
 
-- Each **Clinic** can have its own **custom roles** (clinic-specific)
-- **Clinic Roles** are different from system roles and are scoped to a specific clinic
-- **Clinic Roles** have **Permissions** assigned (via `clinic_role_permissions`)
-- Same permission can be used by both system roles and clinic roles
+- Each **Clinic** can assign roles to users **only from a predefined set of clinic roles** that are seeded in the database
+- **Clinic Roles** are distinct from system roles and are scoped to a specific clinic, but **cannot be created, edited, or deleted via API**
+- Permissions for clinic roles are **predefined** and **cannot be changed via API**; role-permission mappings are set during the initial database seed
+- Same permission can be used by both system roles and clinic roles, but clinic role assignments are restricted to seeded permissions only
 
 **Example Flow:**
 ```
 Clinic (City Medical Center)
   → Has Clinic Role (senior_doctor)
-    → Clinic Role has Permissions (read:all_patients, write:prescriptions)
+    → Clinic Role has predefined Permissions (read:all_patients, write:prescriptions)
 ```
+- Clinic roles are assigned from a fixed, seeded list and cannot be created, updated, or deleted via the API.
+- Clinic role permissions are also fixed and cannot be changed via application endpoints; any updates require a database migration or reseed.
 
 **API Endpoints:**
-- `POST /clinics/:clinicId/roles` - Create clinic-specific role
-- `GET /clinics/:clinicId/roles` - Get all roles for a clinic
-- `POST /clinics/:clinicId/roles/:roleId/permissions` - Assign permission to clinic role
-- `GET /clinics/:clinicId/roles/:roleId/permissions` - Get permissions for clinic role
+- `POST /clinics` - Create new clinic (admin/super-admin only)
+- `GET /clinics` - Get all clinics (admin/super-admin only)
+- `GET /clinics/:clinicId` - Get details for a clinic (admin/super-admin only)
+- `PATCH /clinics/:clinicId` - Update clinic details (admin/super-admin only)
+- `DELETE /clinics/:clinicId` - Delete (soft-delete) a clinic (admin/super-admin only)
 
----
 
 ### 4. Clinics & Patients
 
@@ -150,10 +149,11 @@ Patient (Jane Smith)
 
 **Connection:** `roles` ↔ `role_permissions` ↔ `permissions`
 
-- **Roles** have multiple **Permissions** assigned
-- **Permissions** define granular access rights (e.g., "read:patients", "write:appointments")
-- Same permission can be assigned to multiple roles
-- Permissions are reusable across system roles
+- **Roles** and **Permissions** at the system level are **predefined and seeded by us**
+- System roles can have multiple permissions assigned
+- Permissions define granular access rights (e.g., "read:patients", "write:appointments")
+- The same permission can be assigned to multiple roles, and permissions are shared across system roles
+- Creation, editing, or deletion of system roles and permissions is **not available via API**; these are managed through database seeding and migrations only
 
 **Example Flow:**
 ```
@@ -163,10 +163,7 @@ Role (doctor)
   → Has Permission (read:appointments)
 ```
 
-**API Endpoints:**
-- `POST /roles/:roleId/permissions` - Assign permission to role
-- `GET /roles/:roleId/permissions` - Get all permissions for a role
-- `DELETE /roles/:roleId/permissions/:permissionId` - Remove permission from role
+> **Note:** All roles, permissions, and their mappings are predetermined and managed by us. No endpoints exist for creating, editing, or deleting the core roles or permissions via the API.
 
 ---
 
@@ -196,64 +193,80 @@ The system supports two levels of permissions:
 - User has one system role
 
 ### 2. Clinic-Level Permissions
-- Assigned via `user_clinics` → `clinics` → `clinic_roles` → `clinic_role_permissions` → `permissions`
-- Scoped to specific clinics
-- User can have different roles/permissions in different clinics
+- Clinic-level permissions are granted through assigning existing roles (such as "clinician", "clinic_owner", "technician") to users within each clinic.
+- There is no separate `clinic_roles` table; instead, the same roles table is used for both system and clinic level, but assignment is scoped per clinic.
+- Permissions for each clinic-level role are managed centrally and not assigned by individual clinicians.
+- A user can have different roles (and thus different permissions) in different clinics, but the available roles are predefined and shared across all clinics.
+- Assigning or editing these roles and their permissions is handled through configuration and not through a separate clinic roles entity.
 
-**Permission Resolution:**
-When checking permissions, the system checks:
-1. User's system role permissions (global)
-2. User's clinic-specific role permissions (for the current clinic context)
-3. User's clinical role in the clinic (e.g., "doctor", "nurse")
+
+**Permission Resolution Workflow:**
+
+When determining whether a user is authorized to perform an action, the system evaluates permissions in the following order:
+
+1. **System Role Permissions:**
+   Checks permissions granted to the user's system role (applies application-wide, regardless of clinic).
+
+2. **Clinic Role Permissions (Current Clinic Context):**
+   Checks permissions associated with the role the user holds within the specified clinic context (the clinic being accessed or operated on).
+
+3. **Clinical Role Permissions:**
+   Checks permissions tied to the user's specific clinical role within the clinic (e.g., "doctor", "nurse", etc.).
+
+A permission is granted if any of the above conditions allow the requested action. This layered approach ensures both global and context-specific (clinic-level) access control.
 
 ---
 
-## Data Flow Examples
+## Permission Resolution Examples
 
-### Example 1: User Accessing Patient Data
+To clarify how permissions are evaluated in different contexts, here are sample data flows illustrating user-system and user-clinic relationships.
 
-```
-User (John Doe)
-  ├─ System Role: "doctor"
-  │   └─ Permissions: ["read:patients", "write:patients"]
-  │
-  └─ Clinic Association: "City Medical Center"
-      └─ Clinical Role: "senior_doctor"
-          └─ Clinic Role: "senior_doctor"
-              └─ Permissions: ["read:all_patients", "write:prescriptions"]
-
-When accessing Clinic A's patients:
-  → Check system permissions: ✅ read:patients
-  → Check clinic role permissions: ✅ read:all_patients
-  → Result: Can read all patients in Clinic A
-```
-
-### Example 2: Multi-Clinic User
+### Example 1: Accessing Patient Data as a Single-Clinic User
 
 ```
-User (Jane Smith)
-  ├─ System Role: "nurse"
-  │   └─ Permissions: ["read:patients"]
-  │
-  ├─ Clinic A: "City Medical Center"
-  │   └─ Clinical Role: "nurse"
-  │       └─ Permissions: ["read:patients"]
-  │
-  └─ Clinic B: "Regional Hospital"
-      └─ Clinical Role: "head_nurse"
-          └─ Clinic Role: "head_nurse"
-              └─ Permissions: ["read:all_patients", "manage:staff"]
+User: John Doe
+- System Role: doctor
+  - Permissions: ["read:patients", "write:patients"]
 
-When accessing Clinic A:
-  → System: ✅ read:patients
-  → Clinic A: ✅ read:patients
-  → Result: Can read patients in Clinic A
+- Associated Clinic: City Medical Center
+  - Clinic Role: senior_doctor
+    - Permissions: ["read:all_patients", "write:prescriptions"]
 
-When accessing Clinic B:
-  → System: ✅ read:patients
-  → Clinic B: ✅ read:all_patients, manage:staff
-  → Result: Can read all patients AND manage staff in Clinic B
+Permission Resolution When Accessing Clinic A's Patients:
+1. Check System Role Permissions   → ✅ read:patients
+2. Check Clinic Role Permissions   → ✅ read:all_patients
+Final Authorization: User can read all patients in Clinic A
 ```
+
+### Example 2: Accessing Data as a Multi-Clinic User
+
+```
+User: Jane Smith
+- System Role: nurse
+  - Permissions: ["read:patients"]
+
+- Clinic Associations:
+  - Clinic A: City Medical Center
+    - Clinic Role: nurse
+      - Permissions: ["read:patients"]
+
+  - Clinic B: Regional Hospital
+    - Clinic Role: head_nurse
+      - Permissions: ["read:all_patients", "manage:staff"]
+
+Scenario: Accessing Clinic A
+1. System Role      → ✅ read:patients
+2. Clinic A Role    → ✅ read:patients
+Final Authorization: Can read patients in Clinic A
+
+Scenario: Accessing Clinic B
+1. System Role      → ✅ read:patients
+2. Clinic B Role    → ✅ read:all_patients, manage:staff
+Final Authorization: Can read all patients AND manage staff in Clinic B
+```
+
+**Summary:**
+The system first checks global (system role) permissions and then applies clinic-specific role permissions based on clinic context. If either grants the required right, access is approved. This ensures both global security and granular, clinic-level control for multi-tenant environments.
 
 ---
 
@@ -261,19 +274,18 @@ When accessing Clinic B:
 
 ### Unique Constraints
 - **User Roles**: One role per user (`user_id` is UNIQUE)
-- **User Clinics**: One association per user-clinic pair (`user_id`, `clinic_id` UNIQUE)
-- **Clinic Roles**: One role name per clinic (`clinic_id`, `name` UNIQUE)
+- **User Clinics**: Each user can be associated with only one clinic (`user_id` is UNIQUE)
 - **Clinic Patients**: One association per clinic-patient pair (`clinic_id`, `patient_id` UNIQUE)
 - **Users**: Email must be unique
-- **Clinics**: Name, email, and phone must be unique
+- **Clinics**: email, and phone must be unique
 - **Patients**: Email must be unique
 
 ### Cascading Deletes
 - Deleting a **User** → Removes `user_roles` and `user_clinics`
 - Deleting a **Role** → Removes `role_permissions` and `user_roles`
-- Deleting a **Clinic** → Removes `user_clinics`, `clinic_roles`, and `clinic_patients`
+- Deleting a **Clinic** → Removes `user_clinics` and `clinic_patients`
 - Deleting a **Patient** → Removes `clinic_patients`
-- Deleting a **Permission** → Removes `role_permissions` and `clinic_role_permissions`
+- Deleting a **Permission** → Removes `role_permissions`
 
 ---
 

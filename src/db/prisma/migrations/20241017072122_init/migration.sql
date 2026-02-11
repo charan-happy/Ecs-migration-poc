@@ -72,27 +72,40 @@ CREATE TABLE IF NOT EXISTS modules (
 -- Permissions Table
 CREATE TABLE IF NOT EXISTS permissions (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
     description TEXT,
+    module_id INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_module_id FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
 );
 
 -- Role Permissions Table
 CREATE TABLE IF NOT EXISTS role_permissions (
     id SERIAL PRIMARY KEY,
-    role_id INT REFERENCES roles(id) ON DELETE CASCADE,
-    permission_id INT REFERENCES permissions(id) ON DELETE CASCADE,
+    role_id INT NOT NULL,
+    permission_id INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_role_id FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_permission_id FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 );
 
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL UNIQUE,
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    zip_code VARCHAR(10),
+    country VARCHAR(100),
+    is_2fa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -100,66 +113,49 @@ CREATE TABLE IF NOT EXISTS users (
 -- User Roles Table
 CREATE TABLE IF NOT EXISTS user_roles (
     id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) UNIQUE ON DELETE CASCADE,
-    role_id INT REFERENCES roles(id) ON DELETE CASCADE,
+    user_id INT UNIQUE NOT NULL,
+    role_id INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_role_id FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 
   -- Clinics Table
 CREATE TABLE IF NOT EXISTS clinics (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
-    type clinic_type NOT NULL DEFAULT 'clinic',
     description TEXT,
     address TEXT,
     phone VARCHAR(20) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     website VARCHAR(255),
-    industry VARCHAR(100),
-    size VARCHAR(50),
+    city VARCHAR(100),
+    zip_code VARCHAR(10),
     founded_year INT,
     country VARCHAR(100),
-    type clinic_type NOT NULL DEFAULT 'clinic',
+    added_by_id INT NOT NULL,
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_added_by_id FOREIGN KEY (added_by_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Users Clinics Table
 CREATE TABLE IF NOT EXISTS user_clinics (
     id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    clinic_id INT REFERENCES clinics(id) ON DELETE CASCADE,
+    user_id INT UNIQUE NOT NULL,
+    clinic_id INT NOT NULL,
     user_clinical_role VARCHAR(50) NOT NULL DEFAULT 'doctor',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT user_clinic_unique UNIQUE (user_id, clinic_id)
-);
-
--- Clinics Roles
-CREATE TABLE IF NOT EXISTS clinic_roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    clinic_id INT REFERENCES clinics(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT clinic_role_unique UNIQUE (clinic_id, name)
-);
-
--- Clinic Role Permissions Table
-CREATE TABLE IF NOT EXISTS clinic_role_permissions (
-    id SERIAL PRIMARY KEY,
-    clinic_role_id INT REFERENCES clinic_roles(id) ON DELETE CASCADE,
-    permission_id INT REFERENCES permissions(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    added_by_id INT NOT NULL,
+    CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_clinic_id FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
+    CONSTRAINT fk_added_by_id FOREIGN KEY (added_by_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Patients Table
@@ -176,8 +172,6 @@ CREATE TABLE IF NOT EXISTS patients (
     state VARCHAR(100),
     zip_code VARCHAR(10),
     country VARCHAR(100),
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -185,11 +179,17 @@ CREATE TABLE IF NOT EXISTS patients (
 -- Clinic Patients Table
 CREATE TABLE IF NOT EXISTS clinic_patients (
     id SERIAL PRIMARY KEY,
-    clinic_id INT REFERENCES clinics(id) ON DELETE CASCADE,
-    patient_id INT REFERENCES patients(id) ON DELETE CASCADE,
+    clinic_id INT NOT NULL,
+    patient_id INT NOT NULL,
+    clinician_id INT NOT NULL,
+    added_by_id INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT fk_clinic_id FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
+    CONSTRAINT fk_patient_id FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+    CONSTRAINT fk_clinician_id FOREIGN KEY (clinician_id) REFERENCES user_clinics(id) ON DELETE CASCADE,
+    CONSTRAINT fk_added_by_id FOREIGN KEY (added_by_id) REFERENCES user_clinics(id) ON DELETE CASCADE,
     CONSTRAINT clinic_patient_unique UNIQUE (clinic_id, patient_id)
 );

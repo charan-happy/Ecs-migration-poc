@@ -43,3 +43,143 @@ model db_audit_logs {
   new_value       Json?
   triggered_by    String?   @default(dbgenerated("CURRENT_USER"))
 }
+
+model clinic_patients {
+  id                                                      Int          @id @default(autoincrement())
+  clinic_id                                               Int
+  patient_id                                              Int
+  clinician_id                                            Int
+  added_by_id                                             Int
+  created_at                                              DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at                                              DateTime?    @default(now()) @db.Timestamptz(6)
+  is_deleted                                              Boolean      @default(false)
+  is_active                                               Boolean      @default(true)
+  user_clinics_clinic_patients_added_by_idTouser_clinics  user_clinics @relation("clinic_patients_added_by_idTouser_clinics", fields: [added_by_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_added_by_id")
+  clinics                                                 clinics      @relation(fields: [clinic_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinic_id")
+  user_clinics_clinic_patients_clinician_idTouser_clinics user_clinics @relation("clinic_patients_clinician_idTouser_clinics", fields: [clinician_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinician_id")
+  patients                                                patients     @relation(fields: [patient_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_patient_id")
+
+  @@unique([clinic_id, patient_id], map: "clinic_patient_unique")
+}
+
+model clinics {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique @db.VarChar(100)
+  description     String?
+  address         String?
+  phone           String            @unique @db.VarChar(20)
+  email           String            @unique @db.VarChar(100)
+  website         String?           @db.VarChar(255)
+  industry        String?           @db.VarChar(100)
+  size            String?           @db.VarChar(50)
+  founded_year    Int?
+  country         String?           @db.VarChar(100)
+  is_deleted      Boolean           @default(false)
+  is_active       Boolean           @default(true)
+  created_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  clinic_patients clinic_patients[]
+  user_clinics    user_clinics[]
+}
+
+model modules {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique @db.VarChar(100)
+  description String?
+  created_at  DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?     @default(now()) @db.Timestamptz(6)
+  permissions permissions[]
+}
+
+model patients {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(100)
+  gender          String            @db.VarChar(10)
+  date_of_birth   DateTime          @db.Date
+  phone           String?           @db.VarChar(20)
+  email           String            @unique @db.VarChar(100)
+  address         String?
+  city            String?           @db.VarChar(100)
+  state           String?           @db.VarChar(100)
+  zip_code        String?           @db.VarChar(10)
+  country         String?           @db.VarChar(100)
+  created_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  clinic_patients clinic_patients[]
+}
+
+model permissions {
+  id               Int                @id @default(autoincrement())
+  name             String             @db.VarChar(100)
+  description      String?
+  module_id        Int
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  modules          modules            @relation(fields: [module_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_module_id")
+  role_permissions role_permissions[]
+}
+
+model role_permissions {
+  id            Int         @id @default(autoincrement())
+  role_id       Int
+  permission_id Int
+  created_at    DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?   @default(now()) @db.Timestamptz(6)
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_permission_id")
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_role_id")
+}
+
+model roles {
+  id               Int                @id @default(autoincrement())
+  name             String             @unique @db.VarChar(100)
+  description      String?
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  role_permissions role_permissions[]
+  user_roles       user_roles[]
+}
+
+model user_clinics {
+  id                                                         Int               @id @default(autoincrement())
+  user_id                                                    Int               @unique
+  clinic_id                                                  Int
+  user_clinical_role                                         String            @default("doctor") @db.VarChar(50)
+  created_at                                                 DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at                                                 DateTime?         @default(now()) @db.Timestamptz(6)
+  is_deleted                                                 Boolean           @default(false)
+  is_active                                                  Boolean           @default(true)
+  clinic_patients_clinic_patients_added_by_idTouser_clinics  clinic_patients[] @relation("clinic_patients_added_by_idTouser_clinics")
+  clinic_patients_clinic_patients_clinician_idTouser_clinics clinic_patients[] @relation("clinic_patients_clinician_idTouser_clinics")
+  clinics                                                    clinics           @relation(fields: [clinic_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinic_id")
+  users                                                      users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_id")
+}
+
+model user_roles {
+  id         Int       @id @default(autoincrement())
+  user_id    Int       @unique
+  role_id    Int
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  roles      roles     @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_role_id")
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_id")
+}
+
+model users {
+  id             Int           @id @default(autoincrement())
+  name           String        @db.VarChar(100)
+  email          String        @unique @db.VarChar(100)
+  password       String        @db.VarChar(100)
+  phone          String        @unique @db.VarChar(20)
+  address        String?
+  city           String?       @db.VarChar(100)
+  state          String?       @db.VarChar(100)
+  zip_code       String?       @db.VarChar(10)
+  country        String?       @db.VarChar(100)
+  is_2fa_enabled Boolean       @default(false)
+  is_deleted     Boolean       @default(false)
+  is_active      Boolean       @default(true)
+  created_at     DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?     @default(now()) @db.Timestamptz(6)
+  user_clinics   user_clinics?
+  user_roles     user_roles?
+}
