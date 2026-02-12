@@ -48,6 +48,7 @@ This document describes the API endpoints for managing patients in the system. A
 ---
 
 ### 2. List Patients
+<!-- Allowed to only those who have View Patients Permissions -->
 
 **GET** `/patients`
 

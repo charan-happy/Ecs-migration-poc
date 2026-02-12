@@ -16,15 +16,19 @@ This module provides API endpoints for managing users associated with clinics.
 
 All endpoints are protected by JWT authentication and role-based access control. Only users with proper clinic admin or super admin privileges may manage clinic users.
 
+> **Note:**
+> The backend will extract the `clinicId` from the authenticated user's JWT token.
+> *Do not pass `clinicId` in any path or request body parameters.*
+
 ---
 
 ## API Endpoints
 
 ### 1. Add User to Clinic
 
-**POST** `/clinics/:clinicId/users`
+**POST** `/clinic-users`
 
-- **Purpose**: Add a new user to a clinic.
+- **Purpose**: Add a new user to the clinic associated with the authenticated user (clinicId taken from the JWT token).
 - **Request Body (DTO validation applies):**
   ```json
   {
@@ -41,7 +45,7 @@ All endpoints are protected by JWT authentication and role-based access control.
 - **Business Logic**:
   - Rejects if email/phone already exists in users table (even for another clinic).
   - Hashes password if default credentials are set.
-  - Creates association with the specified clinic and role.
+  - Creates association with the `clinicId` from the authenticated token and assigns the supplied role.
 
 - **Response Example**:
   ```json
@@ -61,36 +65,56 @@ All endpoints are protected by JWT authentication and role-based access control.
 
 ### 2. Get Clinic Users
 
-**GET** `/clinics/:clinicId/users`
+**GET** `/clinic-users`
 
-- **Purpose**: List all users for a given clinic.
-- **Response Example:**
-  ```json
-  [
+- **Purpose:** Retrieve a paginated and filterable list of users for the clinic associated with the JWT token.
+
+#### Query Parameters
+
+| Name      | Type     | Description                                                | Example                |
+|-----------|----------|------------------------------------------------------------|------------------------|
+| `role`    | string   | Filter users by role (e.g. `doctor`, `nurse`, `admin`...) | `role=doctor`          |
+| `is_active` | boolean | Filter by active status                                   | `is_active=true`       |
+| `search`  | string   | Full/partial name or email search (case-insensitive)       | `search=ali`           |
+| `page`    | integer  | Page number (starts at 1)                                  | `page=2`               |
+| `limit`   | integer  | Results per page                                           | `limit=20`             |
+
+<sup>All parameters are optional. Defaults: `page=1`, `limit=20`. Multiple filters can be combined.</sup>
+
+> **Example Request:**
+> `GET /clinic-users?role=doctor&is_active=true&search=ali&page=1&limit=10`
+
+#### **Business Logic**
+- Filters and pagination are applied to the users in the authenticated user's clinic only.
+- Results filtered by supplied parameters; combined if multiple filters present.
+- Supports simple partial-match search across name and email.
+- Paginates results (sorted by name ascending).
+- Returns total result count.
+
+#### **Response Example**
+```json
+{
+  "data": [
     {
       "id": 101,
       "name": "Alice Doe",
       "email": "alice.doe@example.com",
       "role": "doctor",
       "is_active": true
-    },
-    {
-      "id": 102,
-      "name": "Bob Smith",
-      "email": "bob.smith@example.com",
-      "role": "receptionist",
-      "is_active": false
     }
-  ]
-  ```
-
+  ],
+  "page": 1,
+  "limit": 10,
+  "total": 1
+}
+```
 ---
 
 ### 3. Get Single Clinic User
 
-**GET** `/clinics/:clinicId/users/:userId`
+**GET** `/clinic-users/:userId`
 
-- **Purpose**: Retrieve details for a specific user by ID.
+- **Purpose**: Retrieve details for a specific user by their user ID, limited to users within the authenticated user's clinic.
 - **Response Example:**
   ```json
   {
@@ -108,9 +132,9 @@ All endpoints are protected by JWT authentication and role-based access control.
 
 ### 4. Update Clinic User
 
-**PUT** `/clinics/:clinicId/users/:userId`
+**PUT** `/clinic-users/:userId`
 
-- **Purpose**: Update user details or change their role.
+- **Purpose**: Update user details or change their role for a user in the authenticated user's clinic.
 - **Request Body (Partial DTO allowed; all fields optional, at least one required):**
   ```json
   {
@@ -142,9 +166,9 @@ All endpoints are protected by JWT authentication and role-based access control.
 
 ### 5. Activate/Deactivate User
 
-**PATCH** `/clinics/:clinicId/users/:userId/status`
+**PATCH** `/clinic-users/:userId/status`
 
-- **Purpose**: Activate or deactivate a clinic user (soft-delete).
+- **Purpose**: Activate or deactivate a clinic user (soft-delete) in the authenticated user's clinic.
 - **Request Body:**
   ```json
   {
@@ -153,7 +177,7 @@ All endpoints are protected by JWT authentication and role-based access control.
   ```
   - Only `is_active` boolean allowed.
 - **Business Logic**:
-  - Updates the `is_active` status for the user within the clinic.
+  - Updates the `is_active` status for the user within the authenticated user's clinic.
 - **Response Example**:
   ```json
   {
@@ -167,9 +191,9 @@ All endpoints are protected by JWT authentication and role-based access control.
 
 ### 6. Delete Clinic User
 
-**DELETE** `/clinics/:clinicId/users/:userId`
+**DELETE** `/clinic-users/:userId`
 
-- **Purpose**: Remove a user from the clinic (hard delete or soft delete as per business logic).
+- **Purpose**: Remove a user from the clinic (hard delete or soft delete as per business logic), only affecting users in the authenticated user's clinic.
 - **Business Logic**:
   - Ensures the requestor has permissions.
   - Removes user association from clinic.
@@ -187,6 +211,7 @@ All endpoints are protected by JWT authentication and role-based access control.
 - All DTOs use class-validator for strong input validation.
 - All user-creation and update flows require that email and phone are globally unique.
 - Authentication and role guards protect all endpoints.
+- The clinic ID is always taken from the JWT token; do not accept it from the request path or body.
 - No sensitive information (e.g. password hashes) is ever returned in responses.
 - Error messages never leak whether an email is registered.
 

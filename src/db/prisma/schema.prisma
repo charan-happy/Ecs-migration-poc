@@ -45,36 +45,34 @@ model db_audit_logs {
 }
 
 model clinic_patients {
-  id                                                      Int          @id @default(autoincrement())
-  clinic_id                                               Int
-  patient_id                                              Int
-  clinician_id                                            Int
-  added_by_id                                             Int
-  created_at                                              DateTime?    @default(now()) @db.Timestamptz(6)
-  updated_at                                              DateTime?    @default(now()) @db.Timestamptz(6)
-  is_deleted                                              Boolean      @default(false)
-  is_active                                               Boolean      @default(true)
-  user_clinics_clinic_patients_added_by_idTouser_clinics  user_clinics @relation("clinic_patients_added_by_idTouser_clinics", fields: [added_by_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_added_by_id")
-  clinics                                                 clinics      @relation(fields: [clinic_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinic_id")
-  user_clinics_clinic_patients_clinician_idTouser_clinics user_clinics @relation("clinic_patients_clinician_idTouser_clinics", fields: [clinician_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinician_id")
-  patients                                                patients     @relation(fields: [patient_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_patient_id")
+  id                                                               Int          @id @default(autoincrement())
+  clinic_id                                                        Int
+  patient_id                                                       Int
+  assigned_clinician_id                                            Int
+  added_by_id                                                      Int
+  created_at                                                       DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at                                                       DateTime?    @default(now()) @db.Timestamptz(6)
+  is_deleted                                                       Boolean      @default(false)
+  is_active                                                        Boolean      @default(true)
+  user_clinics_clinic_patients_added_by_idTouser_clinics           user_clinics @relation("clinic_patients_added_by_idTouser_clinics", fields: [added_by_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_added_by_id")
+  clinics                                                          clinics      @relation(fields: [clinic_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinic_id")
+  user_clinics_clinic_patients_assigned_clinician_idTouser_clinics user_clinics @relation("clinic_patients_assigned_clinician_idTouser_clinics", fields: [assigned_clinician_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinic_patients_clinician")
+  patients                                                         patients     @relation(fields: [patient_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_patient_id")
 
   @@unique([clinic_id, patient_id], map: "uq_clinic_patients")
 }
 
 model clinics {
   id                      Int               @id @default(autoincrement())
-  name                    String            @db.VarChar(150)
+  clinic_name             String            @db.VarChar(150)
   description             String?
   address                 String?
   city                    String?           @db.VarChar(100)
   state                   String?           @db.VarChar(100)
   zip_code                String?           @db.VarChar(10)
   country                 String?           @db.VarChar(100)
-  latitude                Decimal?          @db.Decimal(10, 7)
-  longitude               Decimal?          @db.Decimal(10, 7)
   phone                   String?           @db.VarChar(20)
-  email                   String?           @db.VarChar(100)
+  clinic_email            String?           @db.VarChar(100)
   website                 String?           @db.VarChar(255)
   registration_number     String?           @unique @db.VarChar(100)
   license_number          String?           @db.VarChar(100)
@@ -105,7 +103,7 @@ model modules {
 model patients {
   id               Int               @id @default(autoincrement())
   name             String            @db.VarChar(100)
-  gender           String            @db.VarChar(10)
+  gender           gender_type
   date_of_birth    DateTime          @db.Date
   phone            String?           @db.VarChar(20)
   email            String            @unique @db.VarChar(100)
@@ -141,6 +139,8 @@ model role_permissions {
   updated_at    DateTime?   @default(now()) @db.Timestamptz(6)
   permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_permission_id")
   roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_role_id")
+
+  @@unique([role_id, permission_id], map: "uq_role_permissions")
 }
 
 model roles {
@@ -154,20 +154,20 @@ model roles {
 }
 
 model user_clinics {
-  id                                                         Int               @id @default(autoincrement())
-  user_id                                                    Int               @unique
-  clinic_id                                                  Int
-  user_clinical_role                                         String            @default("doctor") @db.VarChar(50)
-  created_at                                                 DateTime?         @default(now()) @db.Timestamptz(6)
-  updated_at                                                 DateTime?         @default(now()) @db.Timestamptz(6)
-  is_deleted                                                 Boolean           @default(false)
-  is_active                                                  Boolean           @default(true)
-  added_by_id                                                Int
-  clinic_patients_clinic_patients_added_by_idTouser_clinics  clinic_patients[] @relation("clinic_patients_added_by_idTouser_clinics")
-  clinic_patients_clinic_patients_clinician_idTouser_clinics clinic_patients[] @relation("clinic_patients_clinician_idTouser_clinics")
-  users_user_clinics_added_by_idTousers                      users             @relation("user_clinics_added_by_idTousers", fields: [added_by_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_clinics_added_by")
-  clinics                                                    clinics           @relation(fields: [clinic_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinic_id")
-  users                                                      users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_id")
+  id                                                                  Int               @id @default(autoincrement())
+  user_id                                                             Int               @unique
+  clinic_id                                                           Int
+  user_clinical_role                                                  String?           @db.VarChar(50)
+  is_deleted                                                          Boolean           @default(false)
+  is_active                                                           Boolean           @default(true)
+  added_by_id                                                         Int
+  created_at                                                          DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at                                                          DateTime?         @default(now()) @db.Timestamptz(6)
+  clinic_patients_clinic_patients_added_by_idTouser_clinics           clinic_patients[] @relation("clinic_patients_added_by_idTouser_clinics")
+  clinic_patients_clinic_patients_assigned_clinician_idTouser_clinics clinic_patients[] @relation("clinic_patients_assigned_clinician_idTouser_clinics")
+  users_user_clinics_added_by_idTousers                               users             @relation("user_clinics_added_by_idTousers", fields: [added_by_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_clinics_added_by")
+  clinics                                                             clinics           @relation(fields: [clinic_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_clinic_id")
+  users                                                               users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_id")
 }
 
 model user_roles {
@@ -192,7 +192,7 @@ model users {
   country                                      String?         @db.VarChar(100)
   profile_photo_id                             Int?
   date_of_birth                                DateTime?       @db.Date
-  gender                                       String?         @db.VarChar(20)
+  gender                                       gender_type
   password_hash                                String
   password_changed_at                          DateTime?       @db.Timestamptz(6)
   last_login_at                                DateTime?       @db.Timestamptz(6)
@@ -234,12 +234,12 @@ model user_otp {
   id           Int              @id @default(autoincrement())
   user_id      Int
   otp          String           @db.VarChar(10)
-  otp_type     otp_purpose_type @default(forgot_password)
+  otp_type     otp_purpose_type @default(FORGOT_PASSWORD)
   expires_at   DateTime         @db.Timestamptz(6)
   attempts     Int              @default(0)
   locked_at    DateTime?        @db.Timestamptz(6)
   locked_until DateTime?        @db.Timestamptz(6)
-  is_used      Boolean          @default(false)
+  consumed_at  DateTime?        @db.Timestamptz(6)
   created_at   DateTime?        @default(now()) @db.Timestamptz(6)
   updated_at   DateTime?        @default(now()) @db.Timestamptz(6)
   users        users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_otp_user")
@@ -248,8 +248,8 @@ model user_otp {
 }
 
 enum otp_purpose_type {
-  forgot_password
-  fa_verification @map("2fa_verification")
+  FORGOT_PASSWORD
+  TWO_FA_VERIFICATION
 }
 
 enum permission_type {
@@ -257,4 +257,10 @@ enum permission_type {
   WRITE
   DELETE
   UPDATE
+}
+
+enum gender_type {
+  MALE
+  FEMALE
+  OTHER
 }

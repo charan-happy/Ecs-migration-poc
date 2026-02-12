@@ -184,6 +184,122 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 
 ---
 
+## Get Clinics (List with Filtering & Pagination)
+
+- **Endpoint:** `GET /clinics`
+- **Purpose:** Retrieve a paginated and filterable list of clinics.
+- **Authorization:**
+  - JWT Bearer authentication required
+  - Only users with `admin` or `super_admin` roles may access
+
+### Query Parameters
+
+| Name         | Type     | Description                                              | Example                |
+|--------------|----------|----------------------------------------------------------|------------------------|
+| `search`     | string   | Filter clinics by name or email (partial, case-insensitive) | `search=acme`          |
+| `clinic_type`| string   | Filter by industry                                       | `industry=Healthcare`  |
+| `country`    | string   | Filter by country                                        | `country=USA`          |
+| `is_active`  | boolean  | Filter by active/inactive status                         | `is_active=true`       |
+| `page`       | integer  | Page number (starts at 1)                                | `page=1`               |
+| `limit`      | integer  | Number of results per page (default: 20, max: 100)       | `limit=20`             |
+
+> All parameters optional. Filters can be combined.
+
+### Business Logic
+
+- Results filtered and paginated based on query parameters.
+- `search` covers clinic name and email fields (partial, case-insensitive).
+- Returns sorted results (e.g. by name ascending) and total count.
+- User sees only clinics they are authorized to view (enforced by service).
+
+### Response Example
+
+```json
+{
+  "data": [
+    {
+      "id": 42,
+      "name": "Acme Health Clinic",
+      "email": "info@acmeclinic.com",
+      "industry": "Healthcare",
+      "country": "USA",
+      "is_active": true
+    }
+  ],
+  "page": 1,
+  "limit": 10,
+  "total": 1
+}
+```
+
+---
+
+## Get Clinic by ID
+
+- **Endpoint:** `GET /clinics/:clinicId`
+- **Purpose:** Fetch a single clinic by its ID.
+- **Authorization:**
+  - JWT Bearer authentication required
+  - Must be `admin` or `super_admin`
+  - Additional access guard: can only view permitted clinics
+
+### Business Logic
+
+- Looks up clinic by supplied `clinicId`
+- Only returns if user has access rights for this clinic
+
+### Response Example
+
+```json
+{
+  "id": 42,
+  "name": "Acme Health Clinic",
+  "email": "info@acmeclinic.com",
+  "industry": "Healthcare",
+  "country": "USA",
+  "is_active": true,
+  "admin": {
+    "id": 1001,
+    "name": "Jane Smith",
+    "email": "jane.smith@acmeclinic.com",
+    "role": "admin"
+  },
+  "created_at": "2024-06-18T09:08:00.000Z"
+}
+```
+
+**Error Responses**
+- 404 Not Found: If clinic does not exist or user lacks permission
+
+---
+
+## Delete Clinic by ID
+
+- **Endpoint:** `DELETE /clinics/:clinicId`
+- **Purpose:** Delete a clinic by its ID.
+- **Authorization:**
+  - JWT Bearer authentication required
+  - Only `super_admin` (or `admin` with special rights) can delete clinics
+
+### Business Logic
+
+- Permanently deletes clinic if business logic allows
+- Checks for required permissions; may also soft-delete per business rules
+
+### Response Example
+
+```json
+{
+  "message": "Clinic deleted successfully"
+}
+```
+
+**Error Responses**
+- 404 Not Found: If clinic does not exist or user lacks permission
+- 403 Forbidden: Not authorized to delete this clinic
+
+---
+
 **Security Notes**
 - Only authenticated users with allowed roles
 - All input robustly validated and sanitized

@@ -3,7 +3,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TYPE permission_type AS ENUM ('READ', 'WRITE', 'DELETE', 'UPDATE');
 
-CREATE TYPE otp_purpose_type AS ENUM ('forgot_password', '2fa_verification');
+CREATE TYPE otp_purpose_type AS ENUM ('FORGOT_PASSWORD', 'TWO_FA_VERIFICATION');
+
+CREATE TYPE gender_type AS ENUM ('MALE', 'FEMALE', 'OTHER');
 
 -- Audit Logs Table
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -100,7 +102,8 @@ CREATE TABLE IF NOT EXISTS role_permissions (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT fk_role_permissions_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-    CONSTRAINT fk_role_permissions_permission FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+    CONSTRAINT fk_role_permissions_permission FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
+    CONSTRAINT uq_role_permissions UNIQUE (role_id, permission_id)
 );
 
 -- ======================================
@@ -135,11 +138,11 @@ CREATE TABLE IF NOT EXISTS users (
     -- Profile
     profile_photo_id INT,
     date_of_birth DATE,
-    gender VARCHAR(20),
+    gender gender_type NOT NULL,
 
     -- Authentication
     password_hash TEXT NOT NULL,
-    password_changed_at TIMESTAMPTZ,
+    password_changed_at TIMESTAMPTZ, -- for tracking last password change
 
     -- Security
     last_login_at TIMESTAMPTZ,
@@ -149,8 +152,8 @@ CREATE TABLE IF NOT EXISTS users (
     two_fa_enabled_at TIMESTAMPTZ,
 
     -- Status
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE, -- for tracking user global active status
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE, -- for tracking user global deleted status
     deleted_at TIMESTAMPTZ,
 
     -- Audit
@@ -171,7 +174,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- ======================================
 CREATE TABLE IF NOT EXISTS user_roles (
     id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL UNIQUE,
+    user_id INT NOT NULL UNIQUE, -- one to one mapping with users table
     role_id INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -186,19 +189,17 @@ CREATE TABLE IF NOT EXISTS clinics (
     id SERIAL PRIMARY KEY,
 
     -- Basic Info
-    name VARCHAR(150) NOT NULL,
+    clinic_name VARCHAR(150) NOT NULL,
     description TEXT,
     address TEXT,
     city VARCHAR(100),
     state VARCHAR(100),
     zip_code VARCHAR(10),
     country VARCHAR(100),
-    latitude DECIMAL(10,7),
-    longitude DECIMAL(10,7),
 
     -- Contact
     phone VARCHAR(20),
-    email VARCHAR(100),
+    clinic_email VARCHAR(100),
     website VARCHAR(255),
 
     -- Regulatory
@@ -233,14 +234,14 @@ CREATE TABLE IF NOT EXISTS clinics (
 -- ======================================
 CREATE TABLE IF NOT EXISTS user_clinics (
     id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL UNIQUE,
+    user_id INT NOT NULL UNIQUE, -- one to one mapping with users table
     clinic_id INT NOT NULL,
-    user_clinical_role VARCHAR(50) NOT NULL DEFAULT 'doctor',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    user_clinical_role VARCHAR(50), -- kindof designation inside clinic like doctor, nurse, etc.
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     added_by_id INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT fk_user_clinics_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_user_clinics_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
     CONSTRAINT fk_user_clinics_added_by FOREIGN KEY (added_by_id) REFERENCES users(id) ON DELETE CASCADE
@@ -252,7 +253,7 @@ CREATE TABLE IF NOT EXISTS user_clinics (
 CREATE TABLE IF NOT EXISTS patients (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    gender VARCHAR(10) NOT NULL,
+    gender gender_type NOT NULL,
     date_of_birth DATE NOT NULL,
     phone VARCHAR(20),
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -275,7 +276,7 @@ CREATE TABLE IF NOT EXISTS clinic_patients (
     id SERIAL PRIMARY KEY,
     clinic_id INT NOT NULL,
     patient_id INT NOT NULL,
-    clinician_id INT NOT NULL,
+    assigned_clinician_id INT NOT NULL,
     added_by_id INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -283,7 +284,7 @@ CREATE TABLE IF NOT EXISTS clinic_patients (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_clinic_patients_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
     CONSTRAINT fk_clinic_patients_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-    CONSTRAINT fk_clinic_patients_clinician FOREIGN KEY (clinician_id) REFERENCES user_clinics(id) ON DELETE CASCADE,
+    CONSTRAINT fk_clinic_patients_clinician FOREIGN KEY (assigned_clinician_id) REFERENCES user_clinics(id) ON DELETE CASCADE,
     CONSTRAINT fk_clinic_patients_added_by FOREIGN KEY (added_by_id) REFERENCES user_clinics(id) ON DELETE CASCADE,
     CONSTRAINT uq_clinic_patients UNIQUE (clinic_id, patient_id)
 );
@@ -295,12 +296,12 @@ CREATE TABLE IF NOT EXISTS user_otp (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     otp VARCHAR(10) NOT NULL,
-    otp_type otp_purpose_type NOT NULL DEFAULT 'forgot_password',
+    otp_type otp_purpose_type NOT NULL DEFAULT 'FORGOT_PASSWORD',
     expires_at TIMESTAMPTZ NOT NULL,
     attempts INT NOT NULL DEFAULT 0,
     locked_at TIMESTAMPTZ,
     locked_until TIMESTAMPTZ,
-    is_used BOOLEAN NOT NULL DEFAULT FALSE,
+    consumed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT fk_user_otp_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
