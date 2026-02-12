@@ -6,7 +6,7 @@
 
 - **Endpoint:** `POST /auth/login`
 - **Purpose:**
-  Authenticates users using email and password. This entry-point is **unprotected**—all users (logged in or not) can access this route.
+  Authenticates users using email and password. This entry-point is all users can access this route.
 
 - **Request Body:**
   ```json
@@ -84,7 +84,7 @@
   }
   ```
   - The OTP must be exactly 6 digits.
-  - The **temp_token** (issued by the login endpoint) must be provided as an HTTP-only cookie or in a custom header (according to your implementation).
+  - The **temp_token** (issued by the login endpoint) must be provided as an HTTP-only cookie or in a header **Authorization**.
 
 - **Business Logic Flow:**
   1. **Controller:**
@@ -116,6 +116,83 @@
      - OTP attempts should expire and rate-limited to prevent brute-force.
 
 > Clients should use the `/auth/login` endpoint first. If 2FA is required, client must call `/auth/verify-2fa-otp` with the OTP and temp token to complete login and receive access/refresh tokens.
+
+
+**Login with 2FA (Step-Up Authentication) — Decision Flow**
+
+```text
+┌───────────────────────────────────────────────────────────┐
+│                 CLIENT sends credentials                  │
+│                (POST /auth/login)                         │
+└───────────────────────────────────────────────────────────┘
+                         │
+             ┌───────────▼───────────┐
+             │ Server validates user │
+             │  (email & password)   │
+             └───────────┬───────────┘
+                         │
+              ┌──────────▼───────────┐
+              │   Does user have     │
+              │    2FA enabled?      │
+              └───────┬─────┬───────┘
+             "No"     │     │    "Yes"
+                     ▼             ▼
+      ┌────────────────────┐   ┌──────────────────────────┐
+      │ Generate access &  │   │ Generate OTP and         │
+      │ refresh tokens     │   │ temp_token               │
+      └────────────────────┘   └──────────────────────────┘
+             │                        │
+             ▼                        ▼
+ ┌──────────────────────┐    ┌───────────────────────────────┐
+ │ Return tokens & user │    │ Send OTP to user's email      │
+ │ info to client       │    │ and respond with temp_token   │
+ └──────────────────────┘    └───────────────────────────────┘
+             │                        │
+         [Authenticated]              │
+                                      ▼
+                         ┌─────────────────────────────┐
+                         │ Client submits OTP and      │
+                         │ temp_token to               │
+                         │ POST /auth/verify-2fa-otp   │
+                         └──────────────┬──────────────┘
+                                        │
+                          ┌─────────────▼──────────────┐
+                          │   Server verifies OTP      │
+                          │   and temp_token           │
+                          └─────┬─────────┬────────────┘
+                        "Valid" │         │ "Invalid"
+                                ▼         ▼
+        ┌─────────────────────────────┐   ┌────────────────────┐
+        │ Generate access & refresh   │   │ Error: Invalid OTP │
+        │ tokens and return user info │   └────────────────────┘
+        │ (login complete)            │
+        └─────────────────────────────┘
+```
+
+**Flow Logic (Pseudocode):**
+
+- If credentials are valid:
+    - If user does **not** have 2FA enabled:
+        - Issue access_token & refresh_token
+        - Respond with tokens and user info
+    - Else (user **has** 2FA enabled):
+        - Generate OTP & temp_token
+        - Send OTP via email, respond with temp_token
+        - Wait for client to submit OTP + temp_token to `/auth/verify-2fa-otp`
+            - If OTP is valid:
+                - Issue access_token & refresh_token, respond with user info
+            - Else:
+                - Respond with error (invalid OTP)
+- All sensitive actions are audited and rate limited
+- Always require OTP when 2FA is enabled before issuing tokens
+
+
+- Flow always starts at `/auth/login`.
+- For users with 2FA, authentication is *completed* at `/auth/verify-2fa-otp`.
+- All failure cases return error responses without leaking information.
+- Session tokens only issued after full validation (including OTP for 2FA users).
+
+
 
 
 ## Forgot Password API
@@ -216,3 +293,31 @@
       "message": "Password reset successful. Please login with your new password."
     }
     ```
+
+---
+
+## Forgot Password Flow Diagram
+
+```text
+╔════════════════════╗          ┌──────── POST /auth/forgot-password ────────┐
+║      User         ║═════════▶│           Server/API                        │
+╚════════════════════╝          └───────── Issue temp token (otp phase),     │
+                                        │  send OTP to user's email          │
+                                        └────────────────────────────────────┘
+
+         │
+         │
+         ▼
+
+┌───────────── POST /auth/forgot-password/verify-otp ─────────────┐
+│   (Send OTP + temp token in cookie/header)                      │
+└───────── Server verifies OTP, issues temp token (reset phase)  ─┘
+
+         │
+         │
+         ▼
+
+┌──── POST /auth/reset-password (new password + temp token) ─────┐
+│    Server validates, updates password, ends flow.              │
+└────────────────────────────────────────────────────────────────┘
+```

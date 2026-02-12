@@ -4,6 +4,7 @@ This section describes the API endpoints for managing the authenticated user's p
 
 ---
 
+
 ## API Endpoints
 
 ### 1. Get Current User Profile
@@ -71,7 +72,6 @@ This section describes the API endpoints for managing the authenticated user's p
     "profile_picture_url": "https://myapp.com/uploads/profile/12_updated.jpg"
   }
   ```
-
 ---
 
 ### 4. Change Password

@@ -10,6 +10,25 @@ Role-based permissions:
 All requests require:
 - **JWT authentication** (`AuthGuard('jwt')`): User must be authenticated
 - **Role Guard**: User must have `admin` or `super_admin` role
+## Role Hierarchy for Clinic Creation
+
+Below is a simplified hierarchy diagram showing which roles can create clinics:
+
+```
+    ┌───────────────┐
+    │ SUPER ADMIN   │
+    └─────▲───▲─────┘
+          │   │
+    ┌─────┴───┴─────┐
+    │    ADMIN      │
+    └─────▲─────────┘
+          │
+    (Can create clinics and Clinic Admin)
+```
+
+- **SUPER ADMIN** and **ADMIN** roles are at the top and **can create clinics**.
+
+
 
 ---
 
