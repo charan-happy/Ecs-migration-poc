@@ -2,31 +2,15 @@
 ---
 
 ## Overview
-This API allows authenticated users with **admin** or **super_admin** roles to create new clinics.
+This API allows authenticated users with **superadmin**, **admin**, or **org_admin** roles to create new clinics.
 Role-based permissions:
-- **super_admin**: Can create clinics for any context.
-- **admin**: Can create clinics within allowed scope.
+- **super_admin**: Can create clinics for any organization.
+- **admin**: Can create clinics for any organization.
+- **org_admin**: Can create clinics within their own organization.
 
 All requests require:
 - **JWT authentication** (`AuthGuard('jwt')`): User must be authenticated
-- **Role Guard**: User must have `admin` or `super_admin` role
-## Role Hierarchy for Clinic Creation
-
-Below is a simplified hierarchy diagram showing which roles can create clinics:
-
-```
-    ┌───────────────┐
-    │ SUPER ADMIN   │
-    └─────▲───▲─────┘
-          │   │
-    ┌─────┴───┴─────┐
-    │    ADMIN      │
-    └─────▲─────────┘
-          │
-    (Can create clinics and Clinic Admin)
-```
-
-- **SUPER ADMIN** and **ADMIN** roles are at the top and **can create clinics**.
+- **Role Guard**: User must have `super_admin`, `admin`, or `org_admin` role
 
 
 
@@ -35,11 +19,12 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 ## Create Clinic
 
 - **Endpoint:** `POST /clinics`
+- **Access Control:** Only accessible by superadmin, admin, or org_admin roles
 - **Purpose:** Register a clinic and assign clinic admin user.
 
 **Authorization:**
 - **Authentication:** Valid JWT Bearer token required
-- **Role Guard:** Only `admin` or `super_admin` users allowed
+- **Role Guard:** Only `super_admin`, `admin`, or `org_admin` users allowed
 
 ---
 
@@ -69,7 +54,7 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 **Flow:**
 1. **Guards:**
    - `AuthGuard('jwt')`: Verifies authentication
-   - `RolesGuard`: Checks for `admin` or `super_admin`
+   - `RolesGuard`: Checks for `super_admin`, `admin`, or `org_admin`
 2. **Controller:**
    - Receives validated request
    - Calls Clinics Service
@@ -102,7 +87,7 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 ```
 **Error Responses**
 - **401 Unauthorized:** Missing/invalid JWT
-- **403 Forbidden:** Not `admin`/`super_admin`
+- **403 Forbidden:** Not `super_admin`, `admin`, or `org_admin`
 - **400 Bad Request:** Validation failure, duplicate clinic/email, missing data
 
 ---
@@ -110,6 +95,7 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 ## Update Clinic
 
 - **Endpoint:** `PUT /clinics/:id`
+- **Access Control:** Only accessible by superadmin, admin, or org_admin roles
 - **Purpose:** Update clinic details (any field) or admin info. Partial DTO allowed. Clinic admins can update their clinic/admin fields.
 
 ---
@@ -118,7 +104,8 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 - **Guards:**
   - `AuthGuard('jwt')`: Ensures authentication
   - `RolesGuard`:
-    - `admin`/`super_admin`: Update any clinic
+    - `super_admin`/`admin`: Update any clinic
+    - `org_admin`: Update clinics within their organization
     - `clinic_admin`: Update own clinic and admin details
 
 ---
@@ -188,9 +175,10 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 
 - **Endpoint:** `GET /clinics`
 - **Purpose:** Retrieve a paginated and filterable list of clinics.
+- **Access Control:** Only accessible by superadmin, admin, or org_admin roles
 - **Authorization:**
   - JWT Bearer authentication required
-  - Only users with `admin` or `super_admin` roles may access
+  - Only users with `super_admin`, `admin`, or `org_admin` roles may access
 
 ### Query Parameters
 
@@ -238,9 +226,10 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 
 - **Endpoint:** `GET /clinics/:clinicId`
 - **Purpose:** Fetch a single clinic by its ID.
+- **Access Control:** Only accessible by superadmin, admin, or org_admin roles
 - **Authorization:**
   - JWT Bearer authentication required
-  - Must be `admin` or `super_admin`
+  - Must be `super_admin`, `admin`, or `org_admin`
   - Additional access guard: can only view permitted clinics
 
 ### Business Logic
@@ -277,9 +266,10 @@ Below is a simplified hierarchy diagram showing which roles can create clinics:
 
 - **Endpoint:** `DELETE /clinics/:clinicId`
 - **Purpose:** Delete a clinic by its ID.
+- **Access Control:** Only accessible by superadmin, admin, or org_admin roles
 - **Authorization:**
   - JWT Bearer authentication required
-  - Only `super_admin` (or `admin` with special rights) can delete clinics
+  - Only `super_admin`, `admin`, or `org_admin` can delete clinics
 
 ### Business Logic
 
