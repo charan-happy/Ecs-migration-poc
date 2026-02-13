@@ -183,6 +183,48 @@ CREATE TABLE IF NOT EXISTS user_roles (
 );
 
 -- ======================================
+-- Organizations Table
+-- ======================================
+CREATE TABLE IF NOT EXISTS organizations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    description TEXT,
+    added_by_id INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_organizations_added_by FOREIGN KEY (added_by_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ======================================
+-- User Organizations Table
+-- ======================================
+-- Maps users to organizations with their role within that organization
+-- Supports: super_admin, org_admin, clinician, researcher, patient roles
+CREATE TABLE IF NOT EXISTS user_organizations (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    organization_id INT NOT NULL,
+    role_id INT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    added_by_id INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+    CONSTRAINT fk_user_organizations_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_organizations_org FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_organizations_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_organizations_added_by FOREIGN KEY (added_by_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT uq_user_organizations UNIQUE (user_id, organization_id)
+);
+
+-- Indexes for user_organizations table
+CREATE INDEX IF NOT EXISTS idx_user_organizations_user_id ON user_organizations(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_organizations_org_id ON user_organizations(organization_id);
+CREATE INDEX IF NOT EXISTS idx_user_organizations_role_id ON user_organizations(role_id);
+CREATE INDEX IF NOT EXISTS idx_user_organizations_active ON user_organizations(is_active) WHERE is_active = TRUE;
+
+-- ======================================
 -- Clinics Table
 -- ======================================
 CREATE TABLE IF NOT EXISTS clinics (
@@ -214,6 +256,9 @@ CREATE TABLE IF NOT EXISTS clinics (
     -- Branding
     logo_id INT,
 
+    -- Organization
+    organization_id INT NOT NULL,
+
     -- Ownership & Audit
     added_by_id INT NOT NULL,
     deleted_at TIMESTAMPTZ,
@@ -226,17 +271,20 @@ CREATE TABLE IF NOT EXISTS clinics (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
 
     CONSTRAINT fk_clinics_added_by FOREIGN KEY (added_by_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_clinics_logo FOREIGN KEY (logo_id) REFERENCES media_metadata(id) ON DELETE SET NULL
+    CONSTRAINT fk_clinics_logo FOREIGN KEY (logo_id) REFERENCES media_metadata(id) ON DELETE SET NULL,
+    CONSTRAINT fk_clinics_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
 );
 
 -- ======================================
 -- User Clinics Table
 -- ======================================
+-- Maps users to clinics. Users can belong to multiple clinics within their organization(s).
 CREATE TABLE IF NOT EXISTS user_clinics (
     id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL UNIQUE, -- one to one mapping with users table
+    user_id INT NOT NULL, -- allows multiple clinic assignments per user
     clinic_id INT NOT NULL,
-    user_clinical_role VARCHAR(50), -- kindof designation inside clinic like doctor, nurse, etc.
+    organization_id INT NOT NULL, -- Organization that owns the clinic. Added for data integrity and query optimization.
+    role_id INT NOT NULL, -- role mapping to roles table
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     added_by_id INT NOT NULL,
@@ -244,19 +292,25 @@ CREATE TABLE IF NOT EXISTS user_clinics (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT fk_user_clinics_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_user_clinics_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
-    CONSTRAINT fk_user_clinics_added_by FOREIGN KEY (added_by_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT fk_user_clinics_org FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_clinics_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_clinics_added_by FOREIGN KEY (added_by_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT uq_user_clinics_user_clinic UNIQUE (user_id, clinic_id) -- User can belong to multiple clinics but only once per clinic
 );
+
+-- Index for user_clinics organization_id
+CREATE INDEX IF NOT EXISTS idx_user_clinics_org_id ON user_clinics(organization_id);
 
 -- ======================================
 -- Patients Table
 -- ======================================
-CREATE TABLE IF NOT EXISTS patients (
+CREATE TABLE IF NOT EXISTS patients ( -- patients == subjects
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     gender gender_type NOT NULL,
     date_of_birth DATE NOT NULL,
     phone VARCHAR(20),
-    email VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL , -- not kept email as unique uuid will be used instead
     address TEXT,
     city VARCHAR(100),
     state VARCHAR(100),
@@ -264,9 +318,11 @@ CREATE TABLE IF NOT EXISTS patients (
     country VARCHAR(100),
     blood_group VARCHAR(5),
     profile_photo_id INT,
+    user_id INT, -- Optional reference to users table
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT fk_patients_profile_photo FOREIGN KEY (profile_photo_id) REFERENCES media_metadata(id) ON DELETE SET NULL
+    CONSTRAINT fk_patients_profile_photo FOREIGN KEY (profile_photo_id) REFERENCES media_metadata(id) ON DELETE SET NULL,
+    CONSTRAINT fk_patients_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- ======================================
@@ -276,7 +332,6 @@ CREATE TABLE IF NOT EXISTS clinic_patients (
     id SERIAL PRIMARY KEY,
     clinic_id INT NOT NULL,
     patient_id INT NOT NULL,
-    assigned_clinician_id INT NOT NULL,
     added_by_id INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -284,7 +339,6 @@ CREATE TABLE IF NOT EXISTS clinic_patients (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_clinic_patients_clinic FOREIGN KEY (clinic_id) REFERENCES clinics(id) ON DELETE CASCADE,
     CONSTRAINT fk_clinic_patients_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
-    CONSTRAINT fk_clinic_patients_clinician FOREIGN KEY (assigned_clinician_id) REFERENCES user_clinics(id) ON DELETE CASCADE,
     CONSTRAINT fk_clinic_patients_added_by FOREIGN KEY (added_by_id) REFERENCES user_clinics(id) ON DELETE CASCADE,
     CONSTRAINT uq_clinic_patients UNIQUE (clinic_id, patient_id)
 );
@@ -307,3 +361,15 @@ CREATE TABLE IF NOT EXISTS user_otp (
     CONSTRAINT fk_user_otp_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT uq_user_otp_type UNIQUE (user_id, otp_type)
 );
+
+-- ======================================
+-- Table Comments for Documentation
+-- ======================================
+COMMENT ON TABLE user_organizations IS 'Maps users to organizations with their role. Supports multi-tenant architecture where users can belong to multiple organizations with different roles.';
+COMMENT ON COLUMN user_organizations.role_id IS 'Role within the organization: super_admin, org_admin, clinician, researcher, or patient';
+COMMENT ON COLUMN user_organizations.is_active IS 'Whether the user is currently active in this organization';
+COMMENT ON COLUMN user_organizations.is_deleted IS 'Soft delete flag for the user-organization relationship';
+
+COMMENT ON TABLE user_clinics IS 'Maps users to clinics. Users can belong to multiple clinics within their organization(s).';
+COMMENT ON COLUMN user_clinics.organization_id IS 'Organization that owns the clinic. Added for data integrity and query optimization.';
+COMMENT ON COLUMN user_clinics.role_id IS 'Role within the clinic, references roles table';

@@ -1,6 +1,6 @@
 # Patient Management API
 
-This document describes the API endpoints for managing patients in the system. All endpoints require JWT authentication and are subject to role-based access control (e.g., only staff/clinics may register or modify patient records).
+This document describes the API endpoints for managing patients in the system. All endpoints require JWT authentication and are subject to role-based access control. Patients can be created by clinicians for clinics within their organization only. All patient-related APIs are accessible by clinicians, clinic admins, and org admins.
 
 ---
 
@@ -10,7 +10,8 @@ This document describes the API endpoints for managing patients in the system. A
 
 **POST** `/patients`
 
-- **Purpose:** Register and create a new patient record in the system.
+- **Access Control:** Only accessible by clinicians, clinic admins, or org admins
+- **Purpose:** Register and create a new patient record in the system. Patients can only be created by clinicians for clinics within their organization.
 - **Request Body (JSON, validated by DTO):**
   ```json
   {
@@ -21,14 +22,18 @@ This document describes the API endpoints for managing patients in the system. A
     "phone": "+1-555-555-5555",
     "email": "john.doe@example.com",
     "address": "123 Main St, Springfield",
-    "notes": "Diabetic, allergic to penicillin"
+    "notes": "Diabetic, allergic to penicillin",
+    "clinic_id": 10
   }
   ```
-  - **All required fields** must be provided as per DTO/validation. Email and phone should be unique.
+  - **All required fields** must be provided as per DTO/validation. Email is required but not unique. Phone is optional and not unique.
+  - `clinic_id` (required): ID of the clinic where the patient is being registered (must be within the clinician's organization)
 - **Business Logic:**
-  - Rejects registration if email or phone already exists for another patient.
-  - Applies input validation and sanitization.
-  - Records additional metadata if needed (created_by, clinic, etc.).
+  - Validates that the authenticated user is a clinician assigned to the specified clinic.
+  - Validates that the clinic belongs to the clinician's organization.
+  - Applies input validation and sanitization (email format, phone format, etc.).
+  - Records `created_by` from the authenticated clinician and associates patient with the clinic.
+  - Creates a `clinic_patients` record linking the patient to the clinic.
 - **Response Example:**
   ```json
   {
@@ -48,19 +53,23 @@ This document describes the API endpoints for managing patients in the system. A
 ---
 
 ### 2. List Patients
-<!-- Allowed to only those who have View Patients Permissions -->
 
 **GET** `/patients`
 
+- **Access Control:** Only accessible by clinicians, clinic admins, or org admins
 - **Purpose:** Retrieve a paginated, searchable list of patients.
 - **Query Parameters:**
   - `page` (number, optional): Page number (default: 1)
   - `limit` (number, optional): Number of records per page (default: 20)
   - `search` (string, optional): Search text (matches name, phone, or email)
+  - `clinic_id` (number, optional): Filter by clinic ID
+  - `organization_id` (number, optional): Filter by organization ID
   - Additional filter params may be supported (status, gender, etc.)
 - **Business Logic:**
   - Returns paginated results, sorted by name or creation date.
-  - May restrict visibility based on user role/clinic association.
+  - Clinicians can only view patients from clinics they are assigned to within their organization.
+  - Clinic admins can view patients from their clinic.
+  - Org admins can view patients from all clinics within their organization.
 - **Response Example:**
   ```json
   {
@@ -89,10 +98,14 @@ This document describes the API endpoints for managing patients in the system. A
 
 **GET** `/patients/{patientId}`
 
+- **Access Control:** Only accessible by clinicians, clinic admins, or org admins
 - **Purpose:** Retrieve details for an individual patient by ID.
 - **Route Parameter:** `patientId` (number)
 - **Business Logic:**
-  - Only accessible to authorized users/clinics.
+  - Validates that the patient exists and is associated with a clinic.
+  - Clinicians can only access patients from clinics they are assigned to within their organization.
+  - Clinic admins can access patients from their clinic.
+  - Org admins can access patients from all clinics within their organization.
   - Returns full patient details, omitting sensitive information.
 - **Response Example:**
   ```json
@@ -117,6 +130,7 @@ This document describes the API endpoints for managing patients in the system. A
 
 **PUT** `/patients/{patientId}`
 
+- **Access Control:** Only accessible by clinicians, clinic admins, or org admins
 - **Purpose:** Update the information for an individual patient.
 - **Route Parameter:** `patientId` (number)
 - **Request Body:** Any updatable patient fields; validated with DTO, partial updates allowed.
@@ -128,8 +142,11 @@ This document describes the API endpoints for managing patients in the system. A
   }
   ```
 - **Business Logic:**
-  - Checks for unique email and phone (if updated).
-  - Applies field and format validation.
+  - Validates that the patient exists and is associated with a clinic.
+  - Clinicians can only update patients from clinics they are assigned to within their organization.
+  - Clinic admins can update patients from their clinic.
+  - Org admins can update patients from all clinics within their organization.
+  - Applies field and format validation (email format, phone format, etc.).
   - Performs update and returns latest patient info.
 - **Response Example:**
   ```json
@@ -148,6 +165,7 @@ This document describes the API endpoints for managing patients in the system. A
 
 **PATCH** `/patients/{patientId}/status`
 
+- **Access Control:** Only accessible by clinicians, clinic admins, or org admins
 - **Purpose:** Soft-enable or disable a patient record (deactivate).
 - **Route Parameter:** `patientId` (number)
 - **Request Body:**
@@ -157,6 +175,10 @@ This document describes the API endpoints for managing patients in the system. A
   }
   ```
 - **Business Logic:**
+  - Validates that the patient exists and is associated with a clinic.
+  - Clinicians can only activate/deactivate patients from clinics they are assigned to within their organization.
+  - Clinic admins can activate/deactivate patients from their clinic.
+  - Org admins can activate/deactivate patients from all clinics within their organization.
   - Sets the `is_active` field for the patient.
   - Soft-deactivation means data is retained but patient is unavailable for most actions.
 - **Response Example:**
@@ -174,11 +196,15 @@ This document describes the API endpoints for managing patients in the system. A
 
 **DELETE** `/patients/{patientId}`
 
+- **Access Control:** Only accessible by clinicians, clinic admins, or org admins
 - **Purpose:** Soft-delete a patient (marks record as deleted but keeps it for audit/history).
 - **Route Parameter:** `patientId` (number)
 - **Business Logic:**
+  - Validates that the patient exists and is associated with a clinic.
+  - Clinicians can only delete patients from clinics they are assigned to within their organization.
+  - Clinic admins can delete patients from their clinic.
+  - Org admins can delete patients from all clinics within their organization.
   - Sets a deleted flag or equivalent; data is not permanently removed.
-  - Only authorized roles (e.g., clinic admin) can perform delete.
 - **Response Example:**
   ```json
   {
@@ -191,10 +217,17 @@ This document describes the API endpoints for managing patients in the system. A
 ## Security and Validation Notes
 
 - All endpoints require valid JWT authentication.
-- Role-based access enforced (e.g., only staff/clinics can create or modify).
+- **Access Control:**
+  - All patient-related APIs are accessible by clinicians, clinic admins, and org admins.
+  - Patients can only be created by clinicians for clinics within their organization.
+  - Clinicians can only access patients from clinics they are assigned to within their organization.
+  - Clinic admins can access patients from their clinic.
+  - Org admins can access patients from all clinics within their organization.
 - All DTOs use strong validation (`class-validator`).
 - Input is sanitized and output omits sensitive fields.
-- Unique constraints on email and phone.
+- Email is required but not unique (as per database schema).
+- Phone is optional and not unique (as per database schema).
+- Patients are associated with clinics through the `clinic_patients` table.
 - Errors handled by global exception filters; error responses are consistent and never leak internal state.
 
 ---
