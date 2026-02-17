@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class EnvConfig {
   @IsNotEmpty()
@@ -76,22 +76,6 @@ export class EnvConfig {
   @IsNotEmpty()
   @IsString()
   JAGER_URL!: string;
-
-  @IsNotEmpty()
-  @IsString()
-  REDIS_HOST!: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  REDIS_PORT!: number;
-
-  @IsNotEmpty()
-  @IsString()
-  REDIS_PASSWORD!: string;
-
-  @IsNotEmpty()
-  @IsBoolean()
-  REDIS_TLS_ENABLED!: boolean;
 
   @IsNotEmpty()
   @IsString()

@@ -18,13 +18,11 @@ export interface HealthCheckResponse {
   info: {
     google: { status: number; url: string };
     database: { status: string; message: string; error?: string };
-    redis: { status: string };
     memory_heap: { status: string };
   };
   details: {
     google: { status: number; url: string };
     database: { status: string; message: string; error?: string };
-    redis: { status: string };
     memory_heap: { status: string };
   };
 }
@@ -156,7 +154,6 @@ export class HealthCheckHelpers {
   assertAllServicesHealthy(data: HealthCheckResponse) {
     expect(data.status).toBe('up');
     expect(data.info.google.status).toBe(200);
-    expect(data.info.redis.status).toBe('up');
     expect(data.info.memory_heap.status).toBe('up');
   }
 

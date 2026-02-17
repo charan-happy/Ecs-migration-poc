@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { MemoryHealthIndicator } from '@nestjs/terminus';
-import { RedisHealthIndicator } from '@redis/redis.health';
 import { CustomHttpHealthIndicator } from './custom-http-health.indicator';
 import { CustomDatabaseHealthIndicator } from './custom-database-health.indicator';
 
@@ -10,8 +9,7 @@ export class HealthService {
     private readonly http: CustomHttpHealthIndicator,
     private readonly database: CustomDatabaseHealthIndicator,
     // private readonly disk: DiskHealthIndicator,
-    private readonly memory: MemoryHealthIndicator,
-    private readonly redisHealth: RedisHealthIndicator
+    private readonly memory: MemoryHealthIndicator
   ) {}
 
   async checkHealth(): Promise<any> {
@@ -39,19 +37,6 @@ export class HealthService {
       results.database = {
         status: 'down',
         message: 'Database check failed',
-        error: (error as Error).message,
-      };
-      overallStatus = 'down';
-    }
-
-    // Redis check
-    try {
-      const redisResult = await this.redisHealth.isHealthy('redis');
-      results.redis = redisResult['redis'];
-    } catch (error) {
-      results.redis = {
-        status: 'down',
-        message: 'Redis check failed',
         error: (error as Error).message,
       };
       overallStatus = 'down';
