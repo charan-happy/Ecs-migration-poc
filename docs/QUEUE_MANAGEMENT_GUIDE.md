@@ -1,139 +1,66 @@
-# 📖 Queue Management Guide
+# Queue Management Guide
 
-This document explains how to work with queues in our NestJS + BullMQ setup.
-The system is split into **two processes**:
-
-* **API App** → handles HTTP requests, adds jobs to queues, exposes Queue UI (BullBoard).
-* **Worker App** → runs processors, executes jobs, handles DLQ (Dead Letter Queue) + cron tasks.
+> **Status: Background queues are currently disabled.**
+>
+> The previous BullMQ + Redis-based queue system has been removed. Background job processing
+> will be migrated to **AWS SQS**. The old queue source code is preserved in `src/background/`
+> and `src/redis/` for reference but is excluded from compilation.
 
 ---
 
-## 🗂 Folder Structure Overview
+## Previous Architecture (Archived)
+
+The system previously used **BullMQ** backed by **Redis** with two processes:
+
+* **API App** - handled HTTP requests, added jobs to queues, exposed Queue UI (BullBoard).
+* **Worker App** - ran processors, executed jobs, handled DLQ (Dead Letter Queue) + cron tasks.
+
+### Queue Types (Previously Available)
+
+| Queue | Purpose |
+|-------|---------|
+| Email | OTP verification emails |
+| Notification | Device/topic/general push notifications |
+| Cron | Scheduled periodic jobs (e.g., daily mail) |
+| Dead Letter | Failed job storage and retry |
+
+---
+
+## Migration Plan
+
+The queue system will be rebuilt using **AWS SQS** with the following approach:
+
+1. Replace BullMQ producers with SQS message publishers
+2. Replace BullMQ worker processors with SQS consumers
+3. Replace BullBoard UI with CloudWatch/custom monitoring
+4. Replace Redis-backed DLQ with SQS dead-letter queues
+
+---
+
+## Reference Files (Not Compiled)
+
+The following directories contain the old queue implementation for reference:
 
 ```
-src/
-  bg/
-    background.module.ts        # Worker-only queue setup
-    queue-ui.module.ts          # API-only queue dashboard
-    queue-add-manager.ts        # Helper to add jobs
-  email-queue/
-    email-queue.module.ts       # Worker email queue module
-    email-queue-ui.module.ts    # API email queue UI module
-    email.processor.ts          # Processor logic (Worker)
-    email.queue.ts              # Producer wrapper (API)
-    email-queue.service.ts      # Job execution service (Worker)
-    email-queue.events.ts       # Event listeners
-  notification-queue/           # Similar structure
-  cron/                         # Cron jobs + UI
-  dead-letter-queue/            # DLQ worker module
-  services/                     # Shared business services
+src/background/          # Queue modules, processors, events
+src/redis/               # Redis client, health check, module
+src/interceptors/cache.interceptor.ts  # Redis-backed cache interceptor
 ```
 
----
-
-## ➕ Adding a New Queue
-
-When you need a brand-new queue (e.g., `report` queue):
-
-1. **Define queue name**
-   Add it to `QUEUE_LIST` in `@bg/constants/job.constant.ts`.
-
-2. **Create Worker module**
-
-   ```ts
-   @Module({
-     imports: [DeadLetterQueueModule], // if needed
-     providers: [ReportProcessor, ReportQueueService],
-   })
-   export class ReportQueueModule {}
-   ```
-
-3. **Create API UI module**
-
-   ```ts
-   @Module({
-     imports: [
-       BullBoardModule.forFeature({
-         name: QueueName.REPORT,
-         adapter: BullMQAdapter,
-         options: { displayName: 'Report Queue' },
-       }),
-     ],
-     providers: [ReportQueue, ReportQueueEvents],
-     exports: [ReportQueue],
-   })
-   export class ReportQueueUIModule {}
-   ```
-
-4. **Register modules**
-
-   * Add `ReportQueueModule` in **Worker** (`BackgroundModule`).
-   * Add `ReportQueueUIModule` in **API** (`QueueUIModule`).
-
-5. **Add processors** (Worker) & **add-job manager methods** (API).
+These are excluded from TypeScript compilation via `tsconfig.json` and `tsconfig.build.json`.
 
 ---
 
-## 📝 Adding a Job to an Existing Queue
+## Removed Dependencies
 
-1. Add a method in `AddingJobsToQueueManager` or inside specific queue wrapper (`email.queue.ts`):
+The following npm packages were removed as part of the Redis removal:
 
-   ```ts
-   async addWeeklyReportJob(data: IWeeklyReportJob): Promise<void> {
-     return this.addJob(this.reportQueue, JobName.WEEKLY_REPORT, data);
-   }
-   ```
-
-2. Define the job name in `JobName` enum (`job.constant.ts`).
-
-3. Implement processor logic in the Worker:
-
-   ```ts
-   @Processor(QueueName.REPORT)
-   export class ReportProcessor extends WorkerHost {
-     async process(job: Job<IWeeklyReportJob>) {
-       return this.reportService.generateWeekly(job.data);
-     }
-   }
-   ```
-
----
-
-## 👀 Accessing Queues UI (BullBoard)
-
-* API App exposes BullBoard at:
-
-  ```url
-  https://<api-host>/v1/queues
-  ```
-
-* UI includes:
-
-  * **Email Queue**
-  * **Notification Queue**
-  * **Cron jobs**
-  * **Dead Letter Queue**
-
-* **Security**:
-  `DevToolsMiddleware` is configured at `app.module.ts` layer which can be updated to use auth tokens of the system and add restrictions accordingly.
-
----
-
-## 🚨 Dead Letter Queue (DLQ)
-
-* **Worker App** pushes failed jobs to DLQ via `DeadLetterQueueService`.
-* **API App** shows DLQ in the BullBoard UI (`DeadLetterQueueUIModule`).
-* Developers do **not** need to re-register DLQ. It is one-time setup.
-
-**Retrying jobs**:
-Jobs can be manually retried via the BullBoard UI. Failed jobs are visible with stack traces and failure reasons.
-
----
-
-## ⚡ Best Practices
-
-* ✅ **Common services** (like `EmailService`, `NotificationService`) live in `src/services` and are imported in both API and Worker DI graphs.
-* ✅ Always define new job names in `JobName` enum.
-* ✅ Add event listeners (`*.events.ts`) for monitoring job lifecycle if needed.
-* ✅ Use DLQ for resilience — never silently drop failed jobs.
-* ✅ Use `AddingJobsToQueueManager` for centralized job enqueueing.
+* `bullmq`
+* `@nestjs/bullmq`
+* `@bull-board/api`
+* `@bull-board/express`
+* `@bull-board/nestjs`
+* `cache-manager`
+* `cache-manager-redis-store`
+* `@nestjs/cache-manager`
+* `ioredis`
