@@ -18,7 +18,7 @@ RUN pnpm install --frozen-lockfile
 # Copy rest of source
 COPY . .
 
-
+RUN pnpm run build
 
 # ---------- PRODUCTION STAGE ----------
 FROM node:22-slim AS production
