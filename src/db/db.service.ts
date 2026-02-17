@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import { Client } from 'pg';
 import * as fs from 'fs';
-import path from 'path';
+import * as path from 'path';
 
 @Injectable()
 export class DBService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
