@@ -40,7 +40,7 @@ COPY --from=build /app/.env.prod .env
 
 COPY certificates/ca.pem /app/certificates/ca.pem
 
-EXPOSE 3002
+EXPOSE 3000
 
 #Backend entry 
 CMD ["node", "dist/main.js"]
