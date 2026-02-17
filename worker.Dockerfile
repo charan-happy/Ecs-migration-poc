@@ -36,7 +36,6 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/views ./views
 COPY --from=build /app/assets ./assets
-COPY --from=build /app/.env ./.env
 
 EXPOSE 3003
 
