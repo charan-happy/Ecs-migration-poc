@@ -46,6 +46,10 @@ export class EnvConfig {
   GRAFANA_ADMIN_PASSWORD!: string;
 
   @IsNotEmpty()
+  @IsString()
+  ENABLE_LOKI!: string;
+
+  @IsNotEmpty()
   @IsNumber()
   LOKI_PORT!: number;
 
