@@ -38,7 +38,7 @@ COPY --from=build /app/views ./views
 COPY --from=build /app/assets ./assets
 COPY --from=build /app/.env.prod .env
 
-COPY certificates/ca.pem ./certificates/ca.pem
+COPY certificates/ca.pem /app/certificates/ca.pem
 
 EXPOSE 3002
 
