@@ -3,7 +3,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import { Client } from 'pg';
-import fs from 'fs';
+import * as fs from 'fs';
 import path from 'path';
 
 @Injectable()
