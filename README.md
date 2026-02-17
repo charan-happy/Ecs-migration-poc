@@ -1,7 +1,6 @@
-# 🌐 **NestJS Boilerplate Documentation**
+# 🌐 **ReNeu APIs Documentation**
 
-Welcome to the **NestJS Boilerplate** — a **production-grade** NestJS application template designed for **humans and AI agents** (e.g., Claude, ChatGPT, automation bots).
-It comes pre-configured with **core modules, DevOps tooling, observability, testing frameworks, and background workers** — ready to scale in enterprise environments.
+Welcome to the **ReNeu APIs** — a NestJS application designed with focus on the clinical trials, scalability, performance, and modularity
 
 ---
 
@@ -134,7 +133,7 @@ pnpm generate:prometheus # Generate Prometheus config
 
 ## 📊 **Monitoring & Observability**
 
-This boilerplate comes with **observability by default**:
+This ReNeu APIs comes with **observability by default**:
 
 - 📈 **Prometheus** → [http://localhost:9090](http://localhost:9090)
 - 📊 **Grafana** → [http://localhost:3001](http://localhost:3001) (admin/admin)
