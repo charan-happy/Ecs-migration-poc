@@ -13,7 +13,7 @@ COPY package.json pnpm-lock.yaml ./
 COPY src/db/prisma ./src/db/prisma
 
 # Install all deps (including dev for build)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy rest of source
 COPY . .
