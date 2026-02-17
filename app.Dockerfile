@@ -18,8 +18,6 @@ RUN pnpm install --frozen-lockfile
 # Copy rest of source
 COPY . .
 
-# Remove dev dependencies (production optimization)
-RUN pnpm prune --prod
 
 
 # ---------- PRODUCTION STAGE ----------
