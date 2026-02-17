@@ -32,7 +32,11 @@ export class DBService extends PrismaClient implements OnModuleInit, OnModuleDes
       try {
         this.pgClient = new Client({
           connectionString: databaseUrl,
+          ssl: {
+            ca: fs.readFileSync(path.join(__dirname, '../../certificates/ca.pem')).toString(),
+          },
         });
+
       } catch (error) {
         console.error('Failed to create PostgreSQL client:', error);
         this.pgClient = null;
