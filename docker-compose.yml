@@ -104,6 +104,17 @@ services:
       - monitoring
     restart: unless-stopped
 
+  elasticmq:
+    image: softwaremill/elasticmq-native:latest
+    container_name: elasticmq
+    ports:
+      - '${ELASTICMQ_PORT}:9324'
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf
+    restart: unless-stopped
+    networks:
+      - monitoring
+
 volumes:
   db_data:
     driver: local

@@ -1,119 +1,200 @@
-# 🌐 **NestJS Boilerplate Documentation**
+# NestJS Backend
 
-Welcome to the **NestJS Boilerplate** — a **production-grade** NestJS application template designed for **humans and AI agents** (e.g., Claude, ChatGPT, automation bots).
-It comes pre-configured with **core modules, DevOps tooling, observability, testing frameworks, and background workers** — ready to scale in enterprise environments.
+A production-grade NestJS application with background job processing (AWS SQS / ElasticMQ), observability, and DevOps tooling.
 
 ---
 
-## 🚧 **Prerequisites**
-
-Before you begin, ensure the following are installed:
+## Prerequisites
 
 - **Node.js**: `>=20.0.0`
 - **pnpm**: `>=8.0.0`
-- **Docker Engine**: Can be one of:
-  - Docker Desktop
-  - Podman
-  - Rancher Desktop
-  - OrbStack
+- **Docker Engine**: Docker Desktop, Colima, Podman, Rancher Desktop, or OrbStack
 
-⚠️ **Check if Docker is running:**
+Verify Docker is running:
 
 ```bash
 docker ps
 ```
 
-If this command fails, then exit and throw the error.
-
 ---
 
-## 🚀 **Quick Start**
+## Quick Start
 
 ```bash
 # Install dependencies
 pnpm install
 
-# Setup environment variables (One-time)
+# Setup environment variables (one-time)
 pnpm run setup
-```
 
-### Step-by-step startup (recommended for debugging)
-
-```bash
-# 1. Generate Prometheus yml file (Metrics DB running via docker)
+# Generate Prometheus config
 pnpm generate:prometheus
 
-# 2. Start Docker containers (Postgres, Redis, Monitoring stack)
+# Start Docker containers (Postgres, ElasticMQ, Grafana, Jaeger, etc.)
 pnpm db:dev:up
 
-sleep 5 # Safe check for DB to be available
+sleep 5
 
-# 3. Apply database migrations and generate Prisma client
+# Apply database migrations and generate Prisma client
 pnpm prisma:setup
 
-# 4. Start application in development mode
+# Start API + Worker in development mode
 pnpm start:dev
 ```
 
-**Accessible Endpoints:**
+### Accessible Endpoints
 
-- 🌍 **App** → [http://localhost:3000](http://localhost:3000)
-- 📖 **Swagger Docs** → [http://localhost:3000/api](http://localhost:3000/api)
-- 🩺 **Health Check** → [http://localhost:3000/v1/health](http://localhost:3000/v1/health)
-- 🛠 **Dev Tools** → [http://localhost:3000/v1/dev-tools](http://localhost:3000/v1/dev-tools)
-- 🔍 **Tracing Status** → [http://localhost:3000/v1/tracing/status](http://localhost:3000/v1/tracing/status)
+| Endpoint | URL |
+|----------|-----|
+| App | http://localhost:3000 |
+| Swagger Docs | http://localhost:3000/api |
+| Health Check (JSON) | http://localhost:3000/v1/health |
+| Health Dashboard | http://localhost:3000/v1/health/health-ui |
+| Dev Tools | http://localhost:3000/v1/dev-tools |
+| Queue Dashboard | http://localhost:3000/v1/queues/dashboard |
+| Queue Stats (JSON) | http://localhost:3000/v1/queues |
+| Dev Docs | http://localhost:3000/v1/dev-tools/docs |
+| Application Logs | http://localhost:3000/v1/dev-tools/logs |
+| Tracing Status | http://localhost:3000/v1/tracing/status |
 
 ---
 
-## 🛠 **Scripts Overview**
+## Architecture
 
-### **Setup & Development**
+### Two-Process Model
 
-```bash
-pnpm setup          # Copy .env.example → .env (One-time)
-pnpm build          # Compile app
-pnpm start:dev      # Start in dev mode
-pnpm start:prod     # Start in production
-pnpm type-check     # TypeScript strict mode check
+```
+API Process (pnpm api:start:dev)           Worker Process (pnpm worker:start:dev)
+┌─────────────────────────────┐            ┌──────────────────────────────┐
+│  AppModule                  │            │  WorkerModule                │
+│  ├── QueueProducerModule    │  SQS/      │  ├── BackgroundModule        │
+│  │   ├── EmailProducer      │  ElasticMQ │  │   ├── EmailConsumer       │
+│  │   ├── AuditLogProducer   │ ─────────> │  │   ├── AuditLogConsumer    │
+│  │   └── QueueAddManager    │            │  │   └── DeadLetterConsumer  │
+│  ├── HealthModule (+ SQS)   │            │  └── LoggerModule            │
+│  ├── QueuesModule           │            └──────────────────────────────┘
+│  ├── MetricsModule          │
+│  ├── TracingModule          │
+│  └── DevToolsModule         │
+└─────────────────────────────┘
 ```
 
-### **Code Quality**
+- **API process**: handles HTTP requests, sends messages to SQS queues via producers
+- **Worker process**: long-polls SQS queues, processes messages via consumers
+- **DLQ**: SQS RedrivePolicy moves failed messages (after 3 attempts) to dead-letter queues
 
-```bash
-pnpm lint           # ESLint fix
-pnpm lint:check     # ESLint check only
-pnpm format         # Format with Prettier
-pnpm pre-commit     # Full pre-commit hook (type-check + lint + test)
+### SQS / ElasticMQ
+
+Locally, queues run on **ElasticMQ** (SQS-compatible mock). In production, the same code connects to **AWS SQS** — just change the endpoint and credentials in `.env`.
+
+| Queue | DLQ | Purpose |
+|-------|-----|---------|
+| `{prefix}-email` | `{prefix}-email-dlq` | OTP verification emails |
+| `{prefix}-audit-log` | `{prefix}-audit-log-dlq` | Audit log events |
+
+### Core Features
+
+- NestJS 11
+- Prisma ORM + PostgreSQL
+- AWS SQS (ElasticMQ locally) for background jobs
+- OpenTelemetry + Jaeger for distributed tracing
+- Prometheus + Grafana for metrics
+- Winston + Loki for logging
+- Queue Dashboard (local dev tool)
+
+---
+
+## Directory Layout
+
+```
+src/
+├── api/                  # Controllers & routes
+│   ├── health/           # Health check (HTTP, DB, Memory, SQS)
+│   ├── metrics/          # Prometheus metrics
+│   ├── tracing/          # OpenTelemetry tracing
+│   ├── dev-tools/        # Dev tools dashboard, docs browser, log viewer
+│   └── queues/           # Queue dashboard (stats, DLQ viewer)
+├── background/           # Background job system
+│   ├── constants/        # Job name enums
+│   ├── interfaces/       # Job data interfaces
+│   ├── queue/
+│   │   ├── email/        # Email producer, consumer, service
+│   │   ├── audit-log/    # Audit-log producer, consumer, service
+│   │   └── dead-letter/  # DLQ consumer (logs failed messages)
+│   ├── queue-add-manager.ts      # Facade for sending jobs
+│   ├── queue-producer.module.ts  # API process module (producers)
+│   └── background.module.ts      # Worker process module (consumers)
+├── sqs/                  # SQS core module
+│   ├── sqs.provider.ts   # SQSClient factory
+│   ├── sqs.health.ts     # SQS health indicator
+│   ├── base-producer.ts  # Abstract producer base class
+│   ├── base-consumer.ts  # Abstract consumer base class (polling loop)
+│   ├── sqs.constants.ts  # Queue names, default config
+│   └── sqs.module.ts     # NestJS module
+├── common/               # Shared utils, filters, helpers
+├── config/               # Environment config (Joi validation)
+├── db/                   # Prisma schema & migrations
+├── otel/                 # OpenTelemetry setup
+├── interceptors/         # HTTP interceptors
+├── middlewares/           # Express middlewares
+├── logger/               # Winston logging
+├── app.module.ts         # API root module
+├── worker.module.ts      # Worker root module
+├── main.ts               # API entry point
+└── worker.main.ts        # Worker entry point
+
+docs/                     # Project documentation (browsable via dev-tools)
+views/                    # Pug templates (health, queues, docs, logs)
+assets/                   # Static assets (icons, logo)
+elasticmq.conf            # ElasticMQ queue pre-creation config
 ```
 
-### **Testing**
+---
 
-**Unit / E2E (Jest):**
+## Scripts
+
+### Setup & Development
 
 ```bash
-pnpm test           # Run unit tests
-pnpm test:e2e       # Run e2e tests
-pnpm test:coverage  # Coverage report
+pnpm setup              # Copy .env.example -> .env (one-time)
+pnpm build              # Compile API + Worker
+pnpm start:dev          # Start API + Worker in dev mode
+pnpm start:prod         # Start in production mode
+pnpm api:start:dev      # Start API only (dev)
+pnpm worker:start:dev   # Start Worker only (dev)
+pnpm type-check         # TypeScript strict mode check
 ```
 
-**Playwright:**
+### Code Quality
 
 ```bash
+pnpm lint               # ESLint fix
+pnpm lint:check         # ESLint check only
+pnpm format             # Format with Prettier
+pnpm pre-commit         # Full pre-commit check (type-check + lint + test)
+```
+
+### Testing
+
+```bash
+# Unit / E2E (Jest)
+pnpm test
+pnpm test:e2e
+pnpm test:coverage
+
+# Playwright
 pnpm test:playwright:unit
 pnpm test:playwright:functional
 pnpm test:playwright:e2e
-pnpm test:playwright:ui        # Interactive UI
-```
+pnpm test:playwright:ui
 
-**Load Testing (Artillery):**
-
-```bash
+# Load Testing (Artillery)
 pnpm test:artillery:quick
 pnpm test:artillery:health
 pnpm test:artillery:stress
 ```
 
-### **Database (Prisma + Postgres)**
+### Database (Prisma + PostgreSQL)
 
 ```bash
 pnpm prisma:migrate      # Run migrations
@@ -122,7 +203,7 @@ pnpm prisma:reset        # Reset DB
 pnpm prisma:studio       # Open Prisma Studio
 ```
 
-### **Docker & Infra**
+### Docker & Infrastructure
 
 ```bash
 pnpm db:dev:up           # Start containers
@@ -132,79 +213,76 @@ pnpm generate:prometheus # Generate Prometheus config
 
 ---
 
-## 📊 **Monitoring & Observability**
+## Environment Variables
 
-This boilerplate comes with **observability by default**:
-
-- 📈 **Prometheus** → [http://localhost:9090](http://localhost:9090)
-- 📊 **Grafana** → [http://localhost:3001](http://localhost:3001) (admin/admin)
-- 🔍 **Jaeger** → [http://localhost:16686](http://localhost:16686)
-- 📜 **Loki** → [http://localhost:3100](http://localhost:3100)
-
-### Endpoints
-
-- `/v1/health` → Health API
-- `/v1/metrics` → Prometheus metrics
-- `/v1/health/health-ui` → Health dashboard
-- `/v1/tracing/status` → OpenTelemetry status
-
----
-
-## ⚙️ **Configuration**
-
-### Key Environment Variables
+### Key Configuration
 
 ```ini
-NODE_ENV=development
+# Common
 PORT=3000
-GLOBAL_API_PREFIX=v1
+NODE_ENV=development
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 
 # Database
 DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/postgres"
 
-# Redis
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
-
-# JWT
-JWT_SECRET=supersecretjwtkey
-JWT_EXPIRATION_TIME=3600s
+# SQS / ElasticMQ
+SQS_ENDPOINT=http://localhost:9324         # ElasticMQ local / AWS SQS
+SQS_REGION=us-east-1
+SQS_ACCESS_KEY_ID=local                    # AWS credentials (ElasticMQ accepts anything)
+SQS_SECRET_ACCESS_KEY=local
+SQS_ACCOUNT_ID=000000000000
+SQS_QUEUE_PREFIX=dev
+ELASTICMQ_PORT=9324
 
 # Observability
 OTEL_SERVICE_NAME=nestjs-app
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
+OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
 ```
 
 ### Docker Services
 
-- PostgreSQL → `5432`
-- Redis → `6379`
-- Prometheus → `9090`
-- Grafana → `3001`
-- Jaeger → `16686`
-- Loki → `3100`
+| Service | Port | Description |
+|---------|------|-------------|
+| PostgreSQL | 5432 | Database |
+| ElasticMQ | 9324 | SQS-compatible local queue |
+| Grafana | 3001 | Metrics dashboards |
+| Prometheus | 9090 | Metrics collection |
+| Jaeger | 16686 | Distributed tracing UI |
+| Loki | 3100 | Log aggregation |
+| Promtail | 9080 | Log shipping |
 
 ---
 
-## 🔍 **Distributed Tracing**
+## Monitoring & Observability
 
-Powered by **OpenTelemetry + Jaeger**:
+- **Prometheus** -> http://localhost:9090
+- **Grafana** -> http://localhost:3001 (admin/admin)
+- **Jaeger** -> http://localhost:16686
+- **Loki** -> http://localhost:3100
 
-✅ Auto traces for HTTP calls
-✅ Custom span creation
-✅ Error-aware spans
-✅ Rich metadata
+### Application Endpoints
 
-**Examples:**
+| Endpoint | Description |
+|----------|-------------|
+| `/v1/health` | Health check JSON (HTTP, DB, Memory, SQS) |
+| `/v1/health/health-ui` | Health dashboard (visual) |
+| `/v1/metrics` | Prometheus metrics |
+| `/v1/tracing/status` | OpenTelemetry tracing status |
+| `/v1/queues` | Queue stats JSON |
+| `/v1/queues/dashboard` | Queue dashboard (visual — stats, DLQ viewer) |
+| `/v1/dev-tools/docs` | Documentation browser |
+| `/v1/dev-tools/logs` | Application log viewer |
+
+---
+
+## Distributed Tracing
+
+Powered by OpenTelemetry + Jaeger:
 
 ```bash
 curl http://localhost:3000/v1/tracing/status
 curl http://localhost:3000/v1/tracing/test
-```
-
-For manual traces:
-
-```bash
 curl -X POST http://localhost:3000/v1/tracing/custom \
   -H "Content-Type: application/json" \
   -d '{"operation": "custom-op", "duration": 1500}'
@@ -212,85 +290,45 @@ curl -X POST http://localhost:3000/v1/tracing/custom \
 
 ---
 
-## 🏗 **Architecture**
+## Adding a New Queue
 
-### Core Features
+1. Add enum to `src/sqs/sqs.constants.ts` (`SqsQueueName`)
+2. Add job name to `src/background/constants/job.constant.ts`
+3. Add interface to `src/background/interfaces/job.interface.ts`
+4. Create `src/background/queue/{name}/` with producer, consumer, service, module
+5. Register consumer module in `background.module.ts`
+6. Register producer in `queue-producer.module.ts`
+7. Add method to `queue-add-manager.ts`
+8. Add queue + DLQ to `elasticmq.conf`
 
-- ⚡ **NestJS 11** (latest)
-- 🗄 **Prisma ORM**
-- 🧵 **BullMQ** (queue + worker + process)
-- 📦 **Redis** (cache + jobs)
-- 🔍 **OpenTelemetry**
-- 📊 **Prometheus / Grafana**
-- 📝 **Winston logging / Loki / Promtail**
-
-### Directory Layout
-
-```
-src/
-├── api/            # Controllers & routes
-│   ├── health/
-│   ├── metrics/
-│   ├── tracing/
-│   └── dev-tools/
-├── background/        # Workers & jobs
-├── common/            # Shared utils
-├── config/            # Config modules
-├── db/                # Prisma schema & migrations
-├── otel/              # OpenTelemetry setup
-├── redis/             # Redis setup
-├── interceptors/      # All interceptors will be here
-├── middlewares/       # All middlewares will be here
-├── logger/            # Logging
-├── app.module.ts      # API app level main module
-├── worker.module.ts   # Worker main module
-├── worker.main.ts     # Worker entry/start point
-└── main.ts            # API app entry/start point
-```
+See `docs/QUEUE_MANAGEMENT_GUIDE.md` for full details.
 
 ---
 
-## 🔧 **Dev Guidelines**
+## Troubleshooting
 
-- ✅ **TypeScript strict mode**
-- ✅ **SOLID principles enforced**
-- ✅ **Lint + Prettier mandatory**
-- ✅ **Tests required for new features**
-- ✅ **High coverage encouraged**
-
----
-
-## 🚨 **Troubleshooting**
-
-- **Docker not running**
-
+**Docker not running:**
 ```bash
-docker ps
-# If it fails, start Docker Desktop / Podman / Rancher Desktop / OrbStack
+docker ps   # If fails, start Docker/Colima/Podman
 ```
 
-- **DB Connection Issues**
-
+**DB connection issues:**
 ```bash
 pnpm db:dev:rm && pnpm db:dev:up
 ```
 
-- **Port already in use**
-
+**Port already in use:**
 ```bash
 lsof -i :3000
 kill -9 <PID>
 ```
 
-- **Dependency issues**
-
+**Dependency issues:**
 ```bash
-pnpm clean:all
-pnpm install
+pnpm clean:all && pnpm install
 ```
 
-- **Tracing issues**
-
+**Tracing issues:**
 ```bash
 docker ps | grep jaeger
 curl http://localhost:3000/v1/tracing/status
@@ -298,129 +336,21 @@ curl http://localhost:3000/v1/tracing/status
 
 ---
 
-## 🤖 **AI Debugging Flow**
+## Dev Guidelines
 
-This project is designed to be **AI-agent friendly**.
-If an AI agent (Claude, ChatGPT, etc.) is running or debugging the setup, it should follow this **deterministic troubleshooting sequence**:
-
-### **1. Verify Docker Engine**
-
-```bash
-docker ps
-```
-
-- ✅ If containers list appears (Even empty) → proceed.
-- ❌ If command fails → instruct user:
-  *“Docker engine is not running. Please start Docker Desktop / Podman / Rancher Desktop / OrbStack and retry.”*
+- TypeScript strict mode enabled
+- SOLID principles enforced
+- Lint + Prettier mandatory
+- Tests required for new features
 
 ---
 
-### **2. Verify Database Connectivity**
-
-```bash
-pnpm prisma:dbpull
-```
-
-- ✅ If schema is pulled → DB is reachable.
-- ❌ If error → run:
-
-```bash
-pnpm db:dev:rm && pnpm db:dev:up
-```
-
-Then retry.
-
----
-
-### **3. Verify Prisma Migrations**
-
-```bash
-pnpm prisma:migrate
-```
-
-- ✅ If migrations are applied → continue.
-- ❌ If pending or failed → run:
-
-```bash
-pnpm prisma:reset --force
-pnpm prisma:migrate
-pnpm prisma:generate
-```
-
----
-
-### **4. Verify Application Startup**
-
-```bash
-pnpm start:dev
-```
-
-- ✅ If server starts on `http://localhost:3000` → success.
-- ❌ If port is busy:
-
-```bash
-lsof -i :3000
-kill -9 <PID>
-pnpm start:dev
-```
-
----
-
-### **5. Verify Health Endpoint**
-
-```bash
-curl http://localhost:3000/v1/health
-```
-
-- ✅ Should return `{ "status": "ok" }`.
-- ❌ If not responding:
-
-  - Check app logs.
-  - Verify DB container logs with `docker logs <container_id>`.
-  - Retry migrations.
-
----
-
-### **6. Verify Observability Stack**
-
-- **Prometheus**: [http://localhost:9090](http://localhost:9090)
-- **Grafana**: [http://localhost:3001](http://localhost:3001)
-- **Jaeger**: [http://localhost:16686](http://localhost:16686)
-
-If unavailable → restart monitoring stack:
-
-```bash
-pnpm db:dev:rm && pnpm db:dev:up
-```
-
----
-
-### **7. Verify Tracing**
-
-```bash
-curl http://localhost:3000/v1/tracing/status
-```
-
-- ✅ If “running” → distributed tracing OK.
-- ❌ If error:
-
-  - Check Jaeger container logs.
-  - Ensure `OTEL_EXPORTER_OTLP_ENDPOINT` is set in `.env`.
-
----
-
-### **8. Escalation Path**
-
-If all else fails:
-
-- Ask human operator for `.env` verification & updation of instructions.
-
----
-
-## 📚 **Resources**
+## Resources
 
 - [NestJS Docs](https://docs.nestjs.com/)
 - [Prisma](https://www.prisma.io/docs/)
+- [AWS SQS](https://docs.aws.amazon.com/sqs/)
+- [ElasticMQ](https://github.com/softwaremill/elasticmq)
 - [Playwright](https://playwright.dev/)
 - [Artillery](https://artillery.io/)
 - [OpenTelemetry](https://opentelemetry.io/docs/)

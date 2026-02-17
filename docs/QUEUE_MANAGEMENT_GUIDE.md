@@ -1,66 +1,76 @@
 # Queue Management Guide
 
-> **Status: Background queues are currently disabled.**
->
-> The previous BullMQ + Redis-based queue system has been removed. Background job processing
-> will be migrated to **AWS SQS**. The old queue source code is preserved in `src/background/`
-> and `src/redis/` for reference but is excluded from compilation.
+## Architecture
 
----
-
-## Previous Architecture (Archived)
-
-The system previously used **BullMQ** backed by **Redis** with two processes:
-
-* **API App** - handled HTTP requests, added jobs to queues, exposed Queue UI (BullBoard).
-* **Worker App** - ran processors, executed jobs, handled DLQ (Dead Letter Queue) + cron tasks.
-
-### Queue Types (Previously Available)
-
-| Queue | Purpose |
-|-------|---------|
-| Email | OTP verification emails |
-| Notification | Device/topic/general push notifications |
-| Cron | Scheduled periodic jobs (e.g., daily mail) |
-| Dead Letter | Failed job storage and retry |
-
----
-
-## Migration Plan
-
-The queue system will be rebuilt using **AWS SQS** with the following approach:
-
-1. Replace BullMQ producers with SQS message publishers
-2. Replace BullMQ worker processors with SQS consumers
-3. Replace BullBoard UI with CloudWatch/custom monitoring
-4. Replace Redis-backed DLQ with SQS dead-letter queues
-
----
-
-## Reference Files (Not Compiled)
-
-The following directories contain the old queue implementation for reference:
+The background job system uses **AWS SQS** for message queuing. Locally it runs against **ElasticMQ** (an SQS-compatible mock). In production it connects to real AWS SQS. The switch is **configuration-only** — change the endpoint and credentials in `.env`.
 
 ```
-src/background/          # Queue modules, processors, events
-src/redis/               # Redis client, health check, module
-src/interceptors/cache.interceptor.ts  # Redis-backed cache interceptor
+API Process (AppModule)                    Worker Process (WorkerModule)
+┌─────────────────────────┐               ┌──────────────────────────────┐
+│  QueueProducerModule    │               │  BackgroundModule            │
+│  ├── EmailProducer      │   SQS Queues  │  ├── EmailConsumer           │
+│  ├── AuditLogProducer   │ ────────────> │  ├── AuditLogConsumer        │
+│  └── QueueAddManager    │  (ElasticMQ   │  └── DeadLetterConsumer      │
+└─────────────────────────┘   or AWS)     └──────────────────────────────┘
 ```
 
-These are excluded from TypeScript compilation via `tsconfig.json` and `tsconfig.build.json`.
+- **Producers** (API process): send messages to SQS queues via `QueueAddManager`
+- **Consumers** (Worker process): long-poll SQS queues and process messages
+- **DLQ**: handled natively by SQS RedrivePolicy (after 3 failed attempts)
 
----
+## Queues
 
-## Removed Dependencies
+| Queue | DLQ | Purpose |
+|-------|-----|---------|
+| `{prefix}-email` | `{prefix}-email-dlq` | OTP verification emails |
+| `{prefix}-audit-log` | `{prefix}-audit-log-dlq` | Audit log events |
 
-The following npm packages were removed as part of the Redis removal:
+## Environment Variables
 
-* `bullmq`
-* `@nestjs/bullmq`
-* `@bull-board/api`
-* `@bull-board/express`
-* `@bull-board/nestjs`
-* `cache-manager`
-* `cache-manager-redis-store`
-* `@nestjs/cache-manager`
-* `ioredis`
+```bash
+# SQS / ElasticMQ
+SQS_ENDPOINT=http://localhost:9324        # ElasticMQ local / AWS SQS endpoint
+SQS_REGION=us-east-1                      # AWS region
+SQS_ACCESS_KEY_ID=local                   # AWS access key (ElasticMQ accepts anything)
+SQS_SECRET_ACCESS_KEY=local               # AWS secret key
+SQS_ACCOUNT_ID=000000000000              # AWS account ID
+SQS_QUEUE_PREFIX=dev                      # Queue name prefix (dev/staging/prod)
+ELASTICMQ_PORT=9324                       # ElasticMQ port (docker-compose)
+```
+
+### Local (ElasticMQ)
+Queue URL pattern: `http://localhost:9324/000000000000/{prefix}-{queueName}`
+
+### Production (AWS SQS)
+Queue URL pattern: `https://sqs.{region}.amazonaws.com/{accountId}/{prefix}-{queueName}`
+
+## Local Setup
+
+1. Start ElasticMQ: `docker-compose up -d elasticmq`
+2. Queues are pre-created via `elasticmq.conf`
+3. Start API: `pnpm run api:start:dev`
+4. Start Worker: `pnpm run worker:start:dev`
+
+## Adding a New Queue
+
+1. Add enum value to `src/sqs/sqs.constants.ts` (`SqsQueueName`)
+2. Add job name to `src/background/constants/job.constant.ts` (`JobName`)
+3. Add job interface to `src/background/interfaces/job.interface.ts`
+4. Create `src/background/queue/{name}/` with producer, consumer, service, module
+5. Register consumer module in `src/background/background.module.ts`
+6. Register producer in `src/background/queue-producer.module.ts`
+7. Add method to `src/background/queue-add-manager.ts`
+8. Add queue + DLQ to `elasticmq.conf`
+
+## Key Files
+
+```
+src/sqs/                          # Core SQS module (client, health, base classes)
+src/background/background.module.ts        # Worker process — imports all consumer modules
+src/background/queue-producer.module.ts    # API process — imports all producers
+src/background/queue-add-manager.ts        # Facade for sending jobs from API code
+src/background/queue/email/                # Email queue (producer, consumer, service)
+src/background/queue/audit-log/            # Audit log queue (producer, consumer, service)
+src/background/queue/dead-letter/          # DLQ consumer (logs failed messages)
+elasticmq.conf                             # ElasticMQ queue pre-creation config
+```

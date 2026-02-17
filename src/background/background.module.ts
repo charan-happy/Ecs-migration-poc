@@ -1,18 +1,15 @@
-import { CronModule } from '@cron/cron.module';
-import { EmailQueueModule } from '@email-queue/email-queue.module';
-import { NotificationQueueModule } from '@notification-queue/notification-queue.module';
-import { DeadLetterQueueModule } from '@dead-letter-queue/dead-letter-queue.module';
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
-import { QUEUE_LIST } from '@bg/constants/job.constant';
+import { SqsModule } from '../sqs/sqs.module';
+import { EmailQueueModule } from './queue/email/email-queue.module';
+import { AuditLogQueueModule } from './queue/audit-log/audit-log-queue.module';
+import { DeadLetterQueueModule } from './queue/dead-letter/dead-letter-queue.module';
 
 @Module({
   imports: [
-    BullModule.registerQueue(...QUEUE_LIST.map(name => ({ name }))),
+    SqsModule,
     EmailQueueModule,
-    NotificationQueueModule,
+    AuditLogQueueModule,
     DeadLetterQueueModule,
-    CronModule,
   ],
 })
 export class BackgroundModule {}

@@ -51,6 +51,13 @@ const envConfig = registerAs(
       APP_LOGS_URL: process.env['APP_LOGS_URL'] || '',
       DEV_DOCS_URL: process.env['DEV_DOCS_URL'] || '',
       SERVICES_HEALTH_URL: process.env['SERVICES_HEALTH_URL'] || '',
+      SQS_ENDPOINT: process.env['SQS_ENDPOINT'] || 'http://localhost:9324',
+      SQS_REGION: process.env['SQS_REGION'] || 'us-east-1',
+      SQS_ACCESS_KEY_ID: process.env['SQS_ACCESS_KEY_ID'] || 'local',
+      SQS_SECRET_ACCESS_KEY: process.env['SQS_SECRET_ACCESS_KEY'] || 'local',
+      SQS_ACCOUNT_ID: process.env['SQS_ACCOUNT_ID'] || '000000000000',
+      SQS_QUEUE_PREFIX: process.env['SQS_QUEUE_PREFIX'] || 'dev',
+      ELASTICMQ_PORT: parseInt(process.env['ELASTICMQ_PORT'] || '9324', 10),
     }) as EnvConfig
 );
 
@@ -101,6 +108,13 @@ const validationSchema = Joi.object({
   APP_LOGS_URL: Joi.string().required(),
   DEV_DOCS_URL: Joi.string().required(),
   SERVICES_HEALTH_URL: Joi.string().required(),
+  SQS_ENDPOINT: Joi.string().required(),
+  SQS_REGION: Joi.string().required(),
+  SQS_ACCESS_KEY_ID: Joi.string().required(),
+  SQS_SECRET_ACCESS_KEY: Joi.string().required(),
+  SQS_ACCOUNT_ID: Joi.string().required(),
+  SQS_QUEUE_PREFIX: Joi.string().required(),
+  ELASTICMQ_PORT: Joi.number().port().allow(null, 9324),
 });
 
 @Module({

@@ -18,6 +18,8 @@ import { TracingModule } from './api/tracing/tracing.module';
 import { DevToolsMiddleware } from '@middlewares/dev-tool.middleware';
 import { RouteNames } from '@common/route-names';
 import { CookieAuthMiddleware } from '@middlewares/cookies.middleware';
+import { QueueProducerModule } from '@bg/queue-producer.module';
+import { QueuesModule } from './api/queues/queues.module';
 
 // Rate Limiting
 const rateLimit = ThrottlerModule.forRoot([
@@ -55,11 +57,15 @@ const rateLimit = ThrottlerModule.forRoot([
     DBModule,
     OtelModule,
 
+    // Queues (producers only — consumers run in worker process)
+    QueueProducerModule,
+
     // APIs
     MetricsModule,
     HealthModule,
     DevToolsModule,
     TracingModule,
+    QueuesModule,
   ],
   providers: [
     ErrorHandlerService,
@@ -88,6 +94,7 @@ export class AppModule {
       .forRoutes(
         `:version/${RouteNames.DEV_TOOLS}`,
         `:version/${RouteNames.HEALTH}/${RouteNames.HEALTH_UI}`,
+        `:version/${RouteNames.QUEUES_UI}`,
         `${RouteNames.API_DOCS}`
       );
   }

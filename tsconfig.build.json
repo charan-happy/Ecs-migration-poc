@@ -4,9 +4,6 @@
     "node_modules",
     "test",
     "dist",
-    "**/*spec.ts",
-    "src/background",
-    "src/redis",
-    "src/interceptors/cache.interceptor.ts"
+    "**/*spec.ts"
   ]
 }

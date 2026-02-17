@@ -1,14 +1,12 @@
-// import { EmailModule } from '@services/email/email.module';
-import { EmailQueueService } from '@email-queue/email-queue.service';
-import { EmailProcessor } from '@email-queue/email.processor';
 import { Module } from '@nestjs/common';
-import { DeadLetterQueueModule } from '@dead-letter-queue/dead-letter-queue.module';
+import { SqsModule } from '../../../sqs/sqs.module';
+import { EmailConsumer } from './email.consumer';
+import { EmailProducer } from './email.producer';
+import { EmailQueueService } from './email-queue.service';
 
 @Module({
-  imports: [
-    // EmailModule,
-    DeadLetterQueueModule,
-  ],
-  providers: [EmailQueueService, EmailProcessor],
+  imports: [SqsModule],
+  providers: [EmailConsumer, EmailProducer, EmailQueueService],
+  exports: [EmailProducer, EmailQueueService],
 })
 export class EmailQueueModule {}

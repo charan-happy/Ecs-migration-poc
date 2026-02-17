@@ -2,14 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { MemoryHealthIndicator } from '@nestjs/terminus';
 import { CustomHttpHealthIndicator } from './custom-http-health.indicator';
 import { CustomDatabaseHealthIndicator } from './custom-database-health.indicator';
+import { SqsHealthIndicator } from '../../sqs/sqs.health';
 
 @Injectable()
 export class HealthService {
   constructor(
     private readonly http: CustomHttpHealthIndicator,
     private readonly database: CustomDatabaseHealthIndicator,
-    // private readonly disk: DiskHealthIndicator,
-    private readonly memory: MemoryHealthIndicator
+    private readonly memory: MemoryHealthIndicator,
+    private readonly sqsHealth: SqsHealthIndicator,
   ) {}
 
   async checkHealth(): Promise<any> {
@@ -50,6 +51,19 @@ export class HealthService {
       results.memory_heap = {
         status: 'down',
         message: 'Memory check failed',
+        error: (error as Error).message,
+      };
+      overallStatus = 'down';
+    }
+
+    // SQS check
+    try {
+      const sqsResult = await this.sqsHealth.isHealthy('sqs');
+      results.sqs = sqsResult['sqs'];
+    } catch (error) {
+      results.sqs = {
+        status: 'down',
+        message: 'SQS check failed',
         error: (error as Error).message,
       };
       overallStatus = 'down';

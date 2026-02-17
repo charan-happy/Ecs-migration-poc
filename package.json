@@ -81,6 +81,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.892.0",
     "@aws-sdk/client-sns": "3.891.0",
+    "@aws-sdk/client-sqs": "3.991.0",
     "@aws-sdk/s3-request-presigner": "3.892.0",
     "@nestjs/common": "11.1.6",
     "@nestjs/config": "4.0.2",
@@ -111,6 +112,7 @@
     "fs-extra": "11.3.2",
     "helmet": "8.1.0",
     "joi": "18.0.1",
+    "marked": "17.0.2",
     "nest-winston": "1.10.2",
     "opossum": "9.0.0",
     "path": "0.12.7",
@@ -136,6 +138,7 @@
     "@types/express": "5.0.3",
     "@types/fs-extra": "11.0.4",
     "@types/jest": "30.0.0",
+    "@types/marked": "6.0.0",
     "@types/multer": "2.0.0",
     "@types/node": "24.5.2",
     "@types/opossum": "8.1.9",

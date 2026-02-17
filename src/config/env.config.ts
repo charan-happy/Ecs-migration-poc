@@ -124,4 +124,32 @@ export class EnvConfig {
   @IsNotEmpty()
   @IsString()
   SERVICES_HEALTH_URL!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  SQS_ENDPOINT!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  SQS_REGION!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  SQS_ACCESS_KEY_ID!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  SQS_SECRET_ACCESS_KEY!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  SQS_ACCOUNT_ID!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  SQS_QUEUE_PREFIX!: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  ELASTICMQ_PORT!: number;
 }

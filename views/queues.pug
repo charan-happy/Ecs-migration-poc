@@ -1,0 +1,209 @@
+doctype html
+html
+  head
+    title= title
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1')
+    link(rel='stylesheet', href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css')
+    style.
+      body {
+        background-color: #f8f9fa;
+        color: #333;
+        font-family: 'Segoe UI', sans-serif;
+        padding-top: 80px;
+      }
+
+      .header-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: #ffffff;
+        padding: 1rem 2rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .back-button {
+        font-size: 1.1rem;
+        font-weight: 500;
+        text-decoration: none;
+        color: #007bff;
+      }
+
+      .stat-card {
+        border-left: 6px solid;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      }
+
+      .stat-card-ok {
+        border-color: #28a745;
+      }
+
+      .stat-card-dlq {
+        border-color: #fd7e14;
+      }
+
+      .stat-card-error {
+        border-color: #dc3545;
+      }
+
+      .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: #888;
+        letter-spacing: 0.5px;
+      }
+
+      .dlq-badge {
+        background-color: #fd7e14;
+        color: #fff;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .dlq-table th {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: #666;
+        letter-spacing: 0.5px;
+      }
+
+      .json-data {
+        max-width: 400px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #555;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #aaa;
+        font-style: italic;
+      }
+
+  body
+    .header-bar
+      a.back-button(href='/v1/dev-tools') &larr; Dev Tools
+      h4.mb-0.flex-grow-1.ms-3 Queue Dashboard
+      if user
+        span.fw-semibold
+          | Welcome,&nbsp;
+          span(style='color: #17a2b8; font-weight: 600;') #{user}
+
+    .container.mt-4
+
+      //- Main Queues Section
+      .section-title Main Queues
+      .row
+        each queue in mainQueues
+          .col-md-6.col-lg-4
+            - var cardClass = queue.messagesAvailable < 0 ? 'stat-card-error' : 'stat-card-ok'
+            .stat-card(class=cardClass)
+              .d-flex.justify-content-between.align-items-start
+                h5.text-capitalize.mb-2= queue.name
+                if queue.messagesAvailable < 0
+                  span.badge.bg-danger Unreachable
+              .row.text-center
+                .col-4
+                  .stat-number= queue.messagesAvailable >= 0 ? queue.messagesAvailable : '-'
+                  .stat-label Available
+                .col-4
+                  .stat-number= queue.messagesInFlight >= 0 ? queue.messagesInFlight : '-'
+                  .stat-label In Flight
+                .col-4
+                  .stat-number= queue.messagesDelayed >= 0 ? queue.messagesDelayed : '-'
+                  .stat-label Delayed
+
+      //- DLQ Queues Section
+      .section-title.mt-4
+        | Dead Letter Queues
+        if totalDlqMessages > 0
+          span.dlq-badge.ms-2= totalDlqMessages + ' message' + (totalDlqMessages !== 1 ? 's' : '')
+
+      .row
+        each queue in dlqQueues
+          .col-md-6.col-lg-4
+            - var cardClass = queue.messagesAvailable > 0 ? 'stat-card-error' : (queue.messagesAvailable < 0 ? 'stat-card-error' : 'stat-card-dlq')
+            .stat-card(class=cardClass)
+              .d-flex.justify-content-between.align-items-start
+                h5.text-capitalize.mb-2= queue.name
+                if queue.messagesAvailable > 0
+                  span.badge.bg-danger= queue.messagesAvailable
+                else if queue.messagesAvailable < 0
+                  span.badge.bg-danger Unreachable
+                else
+                  span.badge.bg-success Empty
+              .row.text-center
+                .col-4
+                  .stat-number= queue.messagesAvailable >= 0 ? queue.messagesAvailable : '-'
+                  .stat-label Available
+                .col-4
+                  .stat-number= queue.messagesInFlight >= 0 ? queue.messagesInFlight : '-'
+                  .stat-label In Flight
+                .col-4
+                  .stat-number= queue.messagesDelayed >= 0 ? queue.messagesDelayed : '-'
+                  .stat-label Delayed
+
+      //- DLQ Messages Section
+      .section-title.mt-4 DLQ Messages (Peek)
+
+      if dlqMessages && dlqMessages.length > 0
+        .table-responsive
+          table.table.table-hover.dlq-table
+            thead.table-light
+              tr
+                th Queue
+                th Job Name
+                th Data
+                th Receive Count
+                th Timestamp
+                th Message ID
+            tbody
+              each msg in dlqMessages
+                tr
+                  td
+                    span.dlq-badge= msg.queue
+                  td
+                    strong= msg.jobName
+                  td
+                    .json-data(title=JSON.stringify(msg.data))= JSON.stringify(msg.data)
+                  td.text-center= msg.approximateReceiveCount || '-'
+                  td= msg.timestamp ? new Date(msg.timestamp).toISOString() : '-'
+                  td
+                    code.small= msg.messageId ? msg.messageId.substring(0, 12) + '...' : '-'
+      else
+        .empty-state No DLQ messages found. All queues are healthy.
+
+      //- JSON endpoint hint
+      .mt-4.mb-4.text-muted.small
+        | JSON API:
+        a(href='/v1/queues') GET /v1/queues
+        |  &bull; Dashboard auto-refreshes on page load.
