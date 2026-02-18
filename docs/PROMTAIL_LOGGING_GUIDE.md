@@ -108,6 +108,21 @@ curl "http://localhost:3100/loki/api/v1/query_range?query={job=\"varlogs\"}&star
 
 ---
 
+## 🔧 **Enabling/Disabling Loki**
+
+Set `ENABLE_LOKI=true` in `.env` to enable sending logs to Loki. When disabled (`ENABLE_LOKI=false`):
+- Logs are still written to console and daily rotate files (`/logs/*.log`)
+- The LoggerService skips Loki integration (no circuit breaker, no batch flushing)
+- Promtail can still independently collect log files if running
+
+```bash
+ENABLE_LOKI=false   # Set to 'true' to enable Loki log pushing
+LOKI_PORT=3100      # Required when ENABLE_LOKI=true
+LOKI_API_TOKEN=admin # Required when ENABLE_LOKI=true
+```
+
+---
+
 ## 🔧 **Configuration Files**
 
 ### **Promtail Configuration** (`promtail-config.yml`)

@@ -21,6 +21,7 @@ const envConfig = registerAs(
       NESTJS_METRICS_TARGET: process.env['NESTJS_METRICS_TARGET'] || '',
       GRAFANA_PORT: parseInt(process.env['GRAFANA_PORT'] || '3001', 10),
       GRAFANA_ADMIN_PASSWORD: process.env['GRAFANA_ADMIN_PASSWORD'] || '',
+      ENABLE_LOKI: process.env['ENABLE_LOKI'] || 'false',
       LOKI_PORT: parseInt(process.env['LOKI_PORT'] || '3100', 10),
       LOKI_API_TOKEN: process.env['LOKI_API_TOKEN'] || '',
       OTLP_PORT: parseInt(process.env['OTLP_PORT'] || '4317', 10),
@@ -51,6 +52,14 @@ const envConfig = registerAs(
       APP_LOGS_URL: process.env['APP_LOGS_URL'] || '',
       DEV_DOCS_URL: process.env['DEV_DOCS_URL'] || '',
       SERVICES_HEALTH_URL: process.env['SERVICES_HEALTH_URL'] || '',
+      ENABLE_SQS: process.env['ENABLE_SQS'] || 'false',
+      SQS_ENDPOINT: process.env['SQS_ENDPOINT'] || 'http://localhost:9324',
+      SQS_REGION: process.env['SQS_REGION'] || 'us-east-1',
+      SQS_ACCESS_KEY_ID: process.env['SQS_ACCESS_KEY_ID'] || 'local',
+      SQS_SECRET_ACCESS_KEY: process.env['SQS_SECRET_ACCESS_KEY'] || 'local',
+      SQS_ACCOUNT_ID: process.env['SQS_ACCOUNT_ID'] || '000000000000',
+      SQS_QUEUE_PREFIX: process.env['SQS_QUEUE_PREFIX'] || 'dev',
+      ELASTICMQ_PORT: parseInt(process.env['ELASTICMQ_PORT'] || '9324', 10),
     }) as EnvConfig
 );
 
@@ -66,15 +75,16 @@ const validationSchema = Joi.object({
   NESTJS_METRICS_TARGET: Joi.string().allow(null, 'node-exporter:9100'),
   GRAFANA_PORT: Joi.number().port().allow(null),
   GRAFANA_ADMIN_PASSWORD: Joi.string().allow(null, ''),
-  LOKI_PORT: Joi.when('NODE_ENV', {
-    is: 'development',
+  ENABLE_LOKI: Joi.string().valid('true', 'false').default('false'),
+  LOKI_PORT: Joi.when('ENABLE_LOKI', {
+    is: 'true',
     then: Joi.number().port().required(),
-    otherwise: Joi.number().port().allow(null),
+    otherwise: Joi.number().port().allow(null).default(3100),
   }),
-  LOKI_API_TOKEN: Joi.when('NODE_ENV', {
-    is: 'development',
+  LOKI_API_TOKEN: Joi.when('ENABLE_LOKI', {
+    is: 'true',
     then: Joi.string().required(),
-    otherwise: Joi.string().allow(null, ''),
+    otherwise: Joi.string().allow(null, '').default(''),
   }),
   OTLP_PORT: Joi.number().port().allow(null, 4318),
   OTEL_SERVICE_NAME: Joi.string().required(),
@@ -101,6 +111,38 @@ const validationSchema = Joi.object({
   APP_LOGS_URL: Joi.string().required(),
   DEV_DOCS_URL: Joi.string().required(),
   SERVICES_HEALTH_URL: Joi.string().required(),
+  ENABLE_SQS: Joi.string().valid('true', 'false').default('false'),
+  SQS_ENDPOINT: Joi.when('ENABLE_SQS', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow(null, '').default('http://localhost:9324'),
+  }),
+  SQS_REGION: Joi.when('ENABLE_SQS', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow(null, '').default('us-east-1'),
+  }),
+  SQS_ACCESS_KEY_ID: Joi.when('ENABLE_SQS', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow(null, '').default('local'),
+  }),
+  SQS_SECRET_ACCESS_KEY: Joi.when('ENABLE_SQS', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow(null, '').default('local'),
+  }),
+  SQS_ACCOUNT_ID: Joi.when('ENABLE_SQS', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow(null, '').default('000000000000'),
+  }),
+  SQS_QUEUE_PREFIX: Joi.when('ENABLE_SQS', {
+    is: 'true',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow(null, '').default('dev'),
+  }),
+  ELASTICMQ_PORT: Joi.number().port().allow(null, 9324),
 });
 
 @Module({

@@ -80,13 +80,13 @@ services:
     image: 'postgres:17'
     container_name: 'postgres-db'
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_HOST_AUTH_METHOD: trust
       TZ: UTC
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -103,6 +103,17 @@ services:
     networks:
       - monitoring
     restart: unless-stopped
+
+  elasticmq:
+    image: softwaremill/elasticmq-native:latest
+    container_name: elasticmq
+    ports:
+      - '${ELASTICMQ_PORT}:9324'
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf
+    restart: unless-stopped
+    networks:
+      - monitoring
 
 volumes:
   db_data:

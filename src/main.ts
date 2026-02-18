@@ -92,7 +92,7 @@ async function bootstrap() {
 
   // Default Route - Show Friendly Info Page
   const expressApp = app.getHttpAdapter().getInstance() as any;
-  expressApp.get(['/', '/v1', '/dev-tools', '/v1/queues'], (_: any, res: Response) => {
+  expressApp.get(['/', '/v1', '/dev-tools'], (_: any, res: Response) => {
     res.status(200).render('default', {
       app: 'Project/App Name',
       environment,

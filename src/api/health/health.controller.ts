@@ -1,7 +1,8 @@
 import { RouteNames } from '@common/route-names';
 import { HealthService } from '@health/health.service';
-import { Controller, Get, Render } from '@nestjs/common';
+import { Controller, Get, Render, Res } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 
 @Controller({path: RouteNames.HEALTH, version: '1'})
 @ApiTags('Health')
@@ -14,23 +15,24 @@ export class HealthController {
     summary: 'Check the health of the service',
     description: 'Health check endpoint',
   })
-  async check() {
+  async check(@Res() res: Response) {
     try {
       const result = await this.healthService.checkHealth();
-      return {
-        statusCode: 200,
-        status: 'Success',
+      const httpStatus = result.status === 'up' ? 200 : 503;
+      return res.status(httpStatus).json({
+        statusCode: httpStatus,
+        status: result.status === 'up' ? 'Success' : 'Failure',
         message: 'Health check completed',
         data: result,
-      };
+      });
     } catch (error) {
-      return {
+      return res.status(503).json({
         statusCode: 503,
         status: 'Failure',
         message: 'Health check failed',
         error: (error as Error).message,
         data: null,
-      };
+      });
     }
   }
 

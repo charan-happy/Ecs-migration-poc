@@ -41,13 +41,9 @@
       "@config/*": ["config/*"],
       "@logger/*": ["logger/*"],
       "@db/*": ["db/*"],
-      "@redis/*": ["redis/*"],
+      "@sqs/*": ["sqs/*"],
       "@otel/*": ["otel/*"],
       "@bg/*": ["background/*"],
-      "@cron/*": ["background/cron/*"],
-      "@email-queue/*": ["background/queue/email/*"],
-      "@notification-queue/*": ["background/queue/notification/*"],
-      "@dead-letter-queue/*": ["background/queue/dead-letter/*"],
       "@metrics/*": ["api/metrics/*"],
       "@health/*": ["api/health/*"]
     }

@@ -1,67 +1,44 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { QueueName, JobName, DEFAULT_JOB_OPTIONS } from '@bg/constants/job.constant';
-import {
-  INotificationJob,
-  INotificationTopicJob,
-  IOtpEmailJob,
-  ISendNotificationJob,
-} from '@bg/interfaces/job.interface';
+import { ConfigService } from '@nestjs/config';
+import { JobName } from './constants/job.constant';
+import { IOtpEmailJob, IAuditLogJob } from './interfaces/job.interface';
+import { EmailProducer } from './queue/email/email.producer';
+import { AuditLogProducer } from './queue/audit-log/audit-log.producer';
 
 @Injectable()
-export class AddingJobsToQueueManager {
-  private readonly logger = new Logger(AddingJobsToQueueManager.name);
+export class QueueAddManager {
+  private readonly logger = new Logger(QueueAddManager.name);
+  private readonly sqsEnabled: boolean;
+
   constructor(
-    @InjectQueue(QueueName.EMAIL) private emailQueue: Queue,
-    @InjectQueue(QueueName.NOTIFICATION) private notificationQueue: Queue
-  ) {}
-
-  async addJob<T>(queue: Queue, jobName: JobName, data: T, options?: any): Promise<void> {
-    this.logger.debug(
-      `Adding job ${jobName} to queue ${queue.name} with data: ${JSON.stringify(data)}`,
-      'AddingJobsToQueueManager'
-    );
-
-    try {
-      const job = await queue.add(jobName, data, {
-        ...DEFAULT_JOB_OPTIONS,
-        ...options,
-      });
-      this.logger.debug(
-        `Job ${job.id} added successfully to queue ${queue.name}`,
-        'AddingJobsToQueueManager'
-      );
-    } catch (error) {
-      this.logger.error(
-        `Error adding job ${jobName} to queue ${queue.name}: ${(error as Error).message}`,
-        (error as Error).stack,
-        'AddingJobsToQueueManager'
-      );
-      throw error;
+    private readonly emailProducer: EmailProducer,
+    private readonly auditLogProducer: AuditLogProducer,
+    private readonly configService: ConfigService,
+  ) {
+    this.sqsEnabled = this.configService.get<string>('ENABLE_SQS') === 'true';
+    if (!this.sqsEnabled) {
+      this.logger.warn('SQS is disabled — background jobs will be skipped');
     }
   }
 
-  async addSendNotificationToDeviceJob(jobName: JobName, data: INotificationJob): Promise<void> {
-    return this.addJob(this.notificationQueue, jobName, data);
+  async addOtpEmailJob(data: IOtpEmailJob): Promise<void> {
+    if (!this.sqsEnabled) {
+      this.logger.warn(`SQS disabled — skipping OTP email job for ${data.email}`);
+      return;
+    }
+    this.logger.debug(`Adding OTP email job for ${data.email}`);
+    await this.emailProducer.sendMessage(JobName.OTP_EMAIL_VERIFICATION, data);
   }
 
-  async addSendNotificationToTopicJob(
-    jobName: JobName,
-    data: INotificationTopicJob
-  ): Promise<void> {
-    return this.addJob(this.notificationQueue, jobName, data);
-  }
-
-  async addSendNotificationJob(jobName: JobName, data: ISendNotificationJob): Promise<void> {
-    return this.addJob(this.notificationQueue, jobName, data);
-  }
-
-  async addRegisterationOtpEmailJob(jobName: JobName, data: IOtpEmailJob): Promise<void> {
-    return this.addJob(this.emailQueue, jobName, data);
-  }
-
-  async addForgotPasswordEmailJob(jobName: JobName, data: IOtpEmailJob): Promise<void> {
-    return this.addJob(this.emailQueue, jobName, data);
+  async addAuditLogJob(data: IAuditLogJob): Promise<void> {
+    if (!this.sqsEnabled) {
+      this.logger.warn(`SQS disabled — skipping audit log job: ${data.action}`);
+      return;
+    }
+    this.logger.debug(`Adding audit log job: ${data.action}`);
+    await this.auditLogProducer.sendMessage(JobName.AUDIT_LOG, {
+      ...data,
+      timestamp: data.timestamp ?? Date.now(),
+    });
   }
 }

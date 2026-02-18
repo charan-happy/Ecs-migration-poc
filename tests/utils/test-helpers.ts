@@ -19,11 +19,13 @@ export interface HealthCheckResponse {
     google: { status: number; url: string };
     database: { status: string; message: string; error?: string };
     memory_heap: { status: string };
+    sqs: { status: string };
   };
   details: {
     google: { status: number; url: string };
     database: { status: string; message: string; error?: string };
     memory_heap: { status: string };
+    sqs: { status: string };
   };
 }
 
