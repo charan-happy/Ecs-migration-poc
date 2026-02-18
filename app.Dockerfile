@@ -18,6 +18,8 @@ RUN pnpm install
 # Copy rest of source
 COPY . .
 
+COPY certificates/ca.pem /app/certificates/ca.pem
+
 RUN pnpm run build
 
 # ---------- PRODUCTION STAGE ----------
@@ -38,7 +40,7 @@ COPY --from=build /app/views ./views
 COPY --from=build /app/assets ./assets
 COPY --from=build /app/.env.prod .env
 
-COPY certificates/ca.pem /app/certificates/ca.pem
+COPY --from=build /app/certificates/ca.pem certificates/ca.pem
 
 EXPOSE 3000
 
