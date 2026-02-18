@@ -1,7 +1,7 @@
-# NestJS Boilerplate - Cursor Rules
+# ReNeu APIs - Cursor Rules
 
 ## Project Overview
-This is a comprehensive NestJS boilerplate application with:
+This is a comprehensive ReNeu APIs application with:
 - TypeScript, Prisma ORM, Redis, BullMQ queues
 - OpenTelemetry tracing, Prometheus metrics, Winston logging
 - Health checks, API documentation, background jobs
@@ -161,7 +161,7 @@ This is a comprehensive NestJS boilerplate application with:
 @Injectable()
 export class UserRepository {
   constructor(private prisma: PrismaService) {}
-  
+
   async findById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { id } });
   }
@@ -173,7 +173,7 @@ export class UserRepository {
 @Injectable()
 export class UserService {
   constructor(private userRepository: UserRepository) {}
-  
+
   async getUserById(id: string): Promise<UserDto> {
     const user = await this.userRepository.findById(id);
     if (!user) {
@@ -190,7 +190,7 @@ export class UserService {
 @ApiTags('Users')
 export class UserController {
   constructor(private userService: UserService) {}
-  
+
   @Get(':id')
   @ApiOperation({ summary: 'Get user by ID' })
   async getUser(@Param('id') id: string): Promise<UserDto> {
@@ -231,4 +231,4 @@ export class UserController {
 7. Code review
 8. Merge to main
 
-Remember: This boilerplate follows enterprise-grade patterns. Always consider scalability, maintainability, and security when making changes.
+Remember: This ReNeu APIs follows enterprise-grade patterns. Always consider scalability, maintainability, and security when making changes.

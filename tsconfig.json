@@ -55,6 +55,9 @@
   "exclude": [
     "node_modules",
     "dist",
-    "coverage"
+    "coverage",
+    "src/background",
+    "src/redis",
+    "src/interceptors/cache.interceptor.ts"
   ]
 }

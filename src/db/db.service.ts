@@ -3,6 +3,8 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import { Client } from 'pg';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class DBService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -32,7 +34,11 @@ export class DBService extends PrismaClient implements OnModuleInit, OnModuleDes
       try {
         this.pgClient = new Client({
           connectionString: databaseUrl,
+          ssl: {
+            ca: fs.readFileSync(path.join(__dirname, '../../certificates/ca.pem')).toString(),
+          },
         });
+
       } catch (error) {
         console.error('Failed to create PostgreSQL client:', error);
         this.pgClient = null;

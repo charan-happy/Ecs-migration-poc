@@ -30,7 +30,7 @@ jobs:
         run: corepack enable
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Build application
         run: pnpm run build
@@ -77,20 +77,20 @@ jobs:
           docker push \
             ${{ steps.login-ecr.outputs.registry }}/$BACKEND_REPO:$IMAGE_TAG
 
-      # -------------------------
-      # Worker Image
-      # -------------------------
-      - name: Build Worker image
-        run: |
-          docker build -f worker.Dockerfile -t $WORKER_REPO:$IMAGE_TAG .
+      # # -------------------------
+      # # Worker Image
+      # # -------------------------
+      # - name: Build Worker image
+      #   run: |
+      #     docker build -f worker.Dockerfile -t $WORKER_REPO:$IMAGE_TAG .
 
-      - name: Tag Worker image
-        run: |
-          docker tag \
-            $WORKER_REPO:$IMAGE_TAG \
-            ${{ steps.login-ecr.outputs.registry }}/$WORKER_REPO:$IMAGE_TAG
+      # - name: Tag Worker image
+      #   run: |
+      #     docker tag \
+      #       $WORKER_REPO:$IMAGE_TAG \
+      #       ${{ steps.login-ecr.outputs.registry }}/$WORKER_REPO:$IMAGE_TAG
 
-      - name: Push Worker image
-        run: |
-          docker push \
-            ${{ steps.login-ecr.outputs.registry }}/$WORKER_REPO:$IMAGE_TAG
+      # - name: Push Worker image
+      #   run: |
+      #     docker push \
+      #       ${{ steps.login-ecr.outputs.registry }}/$WORKER_REPO:$IMAGE_TAG

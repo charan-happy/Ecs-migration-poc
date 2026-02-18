@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 Setting up NestJS Boilerplate...');
+console.log('🚀 Setting up ReNeu APIs...');
 console.log(`⏰ Script executed at: ${new Date().toISOString()}`);
 
 // Get the project root directory (one level up from scripts/)

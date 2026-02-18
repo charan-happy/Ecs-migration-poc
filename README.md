@@ -1,6 +1,6 @@
-# NestJS Backend
+# ReNeu APIs
 
-A production-grade NestJS application with background job processing (AWS SQS / ElasticMQ), observability, and DevOps tooling.
+A production-grade NestJS application for clinical trials, with background job processing (AWS SQS / ElasticMQ), observability, and DevOps tooling.
 
 ---
 

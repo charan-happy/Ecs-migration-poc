@@ -13,12 +13,12 @@ COPY package.json pnpm-lock.yaml ./
 COPY src/db/prisma ./src/db/prisma
 
 # Install all deps (including dev for build)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy rest of source
 COPY . .
 
-
+RUN pnpm run build
 
 # ---------- PRODUCTION STAGE ----------
 FROM node:22-slim AS production
@@ -31,14 +31,16 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only necessary files
-COPY --from=build /app/package.json ./
+COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/views ./views
 COPY --from=build /app/assets ./assets
-COPY --from=build /app/.env ./.env
+COPY --from=build /app/.env.prod .env
 
-EXPOSE 3002
+COPY certificates/ca.pem /app/certificates/ca.pem
+
+EXPOSE 3000
 
 #Backend entry 
 CMD ["node", "dist/main.js"]
