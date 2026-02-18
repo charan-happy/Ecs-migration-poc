@@ -1,34 +1,27 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MemoryHealthIndicator } from '@nestjs/terminus';
-import { CustomHttpHealthIndicator } from './custom-http-health.indicator';
 import { CustomDatabaseHealthIndicator } from './custom-database-health.indicator';
 import { SqsHealthIndicator } from '../../sqs/sqs.health';
 
 @Injectable()
 export class HealthService {
+  private readonly sqsEnabled: boolean;
+
   constructor(
-    private readonly http: CustomHttpHealthIndicator,
     private readonly database: CustomDatabaseHealthIndicator,
     private readonly memory: MemoryHealthIndicator,
     private readonly sqsHealth: SqsHealthIndicator,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.sqsEnabled = this.configService.get<string>('ENABLE_SQS') === 'true';
+  }
 
   async checkHealth(): Promise<any> {
     const results: any = {};
     let overallStatus = 'up';
 
-    // HTTP check
-    try {
-      const httpResult = await this.http.pingCheck('google', 'https://google.com');
-      results.google = httpResult['google'];
-    } catch (error) {
-      results.google = {
-        status: 'down',
-        message: 'HTTP check failed',
-        error: (error as Error).message,
-      };
-      overallStatus = 'down';
-    }
+    // --- Essential checks (affect overall status) ---
 
     // Database check
     try {
@@ -56,17 +49,22 @@ export class HealthService {
       overallStatus = 'down';
     }
 
+    // --- Optional checks (informational, do NOT affect overall status) ---
+
     // SQS check
-    try {
-      const sqsResult = await this.sqsHealth.isHealthy('sqs');
-      results.sqs = sqsResult['sqs'];
-    } catch (error) {
-      results.sqs = {
-        status: 'down',
-        message: 'SQS check failed',
-        error: (error as Error).message,
-      };
-      overallStatus = 'down';
+    if (this.sqsEnabled) {
+      try {
+        const sqsResult = await this.sqsHealth.isHealthy('sqs');
+        results.sqs = sqsResult['sqs'];
+      } catch (error) {
+        results.sqs = {
+          status: 'down',
+          message: 'SQS check failed',
+          error: (error as Error).message,
+        };
+      }
+    } else {
+      results.sqs = { status: 'disabled' };
     }
 
     return {

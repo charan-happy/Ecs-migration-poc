@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { BaseSqsConsumer } from '../../../sqs/base-consumer';
 import { SQS_CLIENT } from '../../../sqs/sqs.provider';
@@ -16,9 +17,10 @@ export class EmailConsumer extends BaseSqsConsumer {
   constructor(
     @Inject(SQS_CLIENT) sqsClient: SQSClient,
     queueUrlHelper: SqsQueueUrlHelper,
+    configService: ConfigService,
     private readonly emailQueueService: EmailQueueService,
   ) {
-    super(sqsClient, queueUrlHelper);
+    super(sqsClient, queueUrlHelper, configService);
   }
 
   async handleMessage(message: ISqsJobMessage): Promise<void> {

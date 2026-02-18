@@ -4,6 +4,7 @@ import {
   DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
 import { Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SqsQueueName, DEFAULT_SQS_CONFIG } from './sqs.constants';
 import { ISqsJobMessage } from './sqs.interfaces';
 import { SqsQueueUrlHelper } from './sqs-queue-url.helper';
@@ -19,11 +20,17 @@ export abstract class BaseSqsConsumer
   constructor(
     protected readonly sqsClient: SQSClient,
     protected readonly queueUrlHelper: SqsQueueUrlHelper,
+    protected readonly configService: ConfigService,
   ) {}
 
   abstract handleMessage(message: ISqsJobMessage): Promise<void>;
 
   onApplicationBootstrap(): void {
+    const sqsEnabled = this.configService.get<string>('ENABLE_SQS') === 'true';
+    if (!sqsEnabled) {
+      this.logger.warn(`SQS disabled — skipping consumer for queue: ${this.queueName}`);
+      return;
+    }
     this.startPolling();
   }
 

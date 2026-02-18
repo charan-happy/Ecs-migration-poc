@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
 import { Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { SQS_CLIENT } from '../../../sqs/sqs.provider';
@@ -16,9 +17,15 @@ export class DeadLetterConsumer implements OnApplicationBootstrap, OnApplication
   constructor(
     @Inject(SQS_CLIENT) private readonly sqsClient: SQSClient,
     private readonly queueUrlHelper: SqsQueueUrlHelper,
+    private readonly configService: ConfigService,
   ) {}
 
   onApplicationBootstrap(): void {
+    const sqsEnabled = this.configService.get<string>('ENABLE_SQS') === 'true';
+    if (!sqsEnabled) {
+      this.logger.warn('SQS disabled — skipping DLQ consumers');
+      return;
+    }
     this.isRunning = true;
     for (const dlq of DLQ_QUEUES) {
       void this.pollDlq(dlq);

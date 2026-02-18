@@ -131,6 +131,10 @@ export class EnvConfig {
 
   @IsNotEmpty()
   @IsString()
+  ENABLE_SQS!: string;
+
+  @IsNotEmpty()
+  @IsString()
   SQS_ENDPOINT!: string;
 
   @IsNotEmpty()

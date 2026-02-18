@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   SQSClient,
   GetQueueAttributesCommand,
@@ -35,13 +36,21 @@ const ALL_QUEUES = [...MAIN_QUEUES, ...DLQ_QUEUES];
 @Injectable()
 export class QueuesService {
   private readonly logger = new Logger(QueuesService.name);
+  private readonly sqsEnabled: boolean;
 
   constructor(
     @Inject(SQS_CLIENT) private readonly sqsClient: SQSClient,
     private readonly queueUrlHelper: SqsQueueUrlHelper,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.sqsEnabled = this.configService.get<string>('ENABLE_SQS') === 'true';
+  }
 
   async getQueueStats(): Promise<QueueStats[]> {
+    if (!this.sqsEnabled) {
+      return [];
+    }
+
     const stats: QueueStats[] = [];
 
     for (const queueName of ALL_QUEUES) {
@@ -125,6 +134,9 @@ export class QueuesService {
   }
 
   async getAllDlqMessages(): Promise<DlqMessage[]> {
+    if (!this.sqsEnabled) {
+      return [];
+    }
     const allMessages: DlqMessage[] = [];
     for (const dlq of DLQ_QUEUES) {
       const messages = await this.peekDlqMessages(dlq);
