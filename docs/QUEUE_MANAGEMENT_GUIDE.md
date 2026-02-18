@@ -29,6 +29,7 @@ API Process (AppModule)                    Worker Process (WorkerModule)
 
 ```bash
 # SQS / ElasticMQ
+ENABLE_SQS=true                           # Set to 'false' to disable SQS (producers no-op, consumers skip polling)
 SQS_ENDPOINT=http://localhost:9324        # ElasticMQ local / AWS SQS endpoint
 SQS_REGION=us-east-1                      # AWS region
 SQS_ACCESS_KEY_ID=local                   # AWS access key (ElasticMQ accepts anything)
@@ -37,6 +38,16 @@ SQS_ACCOUNT_ID=000000000000              # AWS account ID
 SQS_QUEUE_PREFIX=dev                      # Queue name prefix (dev/staging/prod)
 ELASTICMQ_PORT=9324                       # ElasticMQ port (docker-compose)
 ```
+
+### Disabling SQS
+
+Set `ENABLE_SQS=false` to run the app and worker without SQS/ElasticMQ. When disabled:
+- **Producers** silently skip sending messages (log a warning instead)
+- **Consumers** do not start polling
+- **Health check** reports SQS as `"disabled"` instead of `"down"`
+- **Queue dashboard** returns empty stats
+
+This is useful for local development or deployments where background jobs are not needed.
 
 ### Local (ElasticMQ)
 Queue URL pattern: `http://localhost:9324/000000000000/{prefix}-{queueName}`
