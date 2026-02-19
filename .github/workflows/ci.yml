@@ -95,66 +95,29 @@ jobs:
           docker push \
             ${{ steps.login-ecr.outputs.registry }}/$MIGRATION_REPO:$IMAGE_TAG
 
-      # - name: Run Migration Task
-      #   id: migration
-      #   env:
-      #     ACCOUNT_ID: ${{ steps.login-ecr.outputs.registry }}
-      #     REGION: ${{ secrets.AWS_REGION }}
-      #   run: |
-      #     aws ecs register-task-definition --cli-input-json file://ecs/task-definition-migration.json
-      #     TASK_ARN=$(aws ecs run-task --cluster migration-cluster --task-definition migration-task --launch-type FARGATE --network-configuration "awsvpcConfiguration={subnets=[subnet-0712c66198e01988d,subnet-08d8d8bbeaaf26378],securityGroups=[sg-0963ca5d5026e71b9]}" --query 'tasks[0].taskArn' --output text)
-      #     echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
-      #     aws ecs wait tasks-stopped --cluster migration-cluster --tasks $TASK_ARN
-      #     EXIT_CODE=$(aws ecs describe-tasks --cluster migration-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
-      #     if [ "$EXIT_CODE" != "0" ]; then
-      #       echo "Migration failed with exit code $EXIT_CODE"
-      #       exit 1
-      #     fi
-
-      # - name: Deploy Backend
-      #   if: success()
-      #   env:
-      #     ACCOUNT_ID: ${{ steps.login-ecr.outputs.registry }}
-      #     REGION: ${{ secrets.AWS_REGION }}
-      #   run: |
-      #     aws ecs register-task-definition --cli-input-json file://ecs/task-definition-backend.json
-      #     aws ecs update-service --cluster backend-cluster --service backend-service --task-definition backend-task --force-new-deployment
-
-      - name: Run Migration Task (Debug DATABASE_URL)
+      - name: Run Migration Task
         id: migration
         env:
           ACCOUNT_ID: ${{ steps.login-ecr.outputs.registry }}
           REGION: ${{ secrets.AWS_REGION }}
         run: |
           aws ecs register-task-definition --cli-input-json file://ecs/task-definition-migration.json
-
-          TASK_ARN=$(aws ecs run-task \
-            --cluster migration-cluster \
-            --task-definition migration-task \
-            --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[subnet-0712c66198e01988d,subnet-08d8d8bbeaaf26378],securityGroups=[sg-0963ca5d5026e71b9]}" \
-            --overrides '{
-              "containerOverrides": [
-                {
-                  "name": "migration-container",
-                  "command": ["sh", "-c", "echo DATABASE_URL=$DATABASE_URL && sleep 60"]
-                }
-              ]
-            }' \
-            --query 'tasks[0].taskArn' \
-            --output text)
-
+          TASK_ARN=$(aws ecs run-task --cluster migration-cluster --task-definition migration-task --launch-type FARGATE --network-configuration "awsvpcConfiguration={subnets=[subnet-0712c66198e01988d,subnet-08d8d8bbeaaf26378],securityGroups=[sg-0963ca5d5026e71b9]}" --query 'tasks[0].taskArn' --output text)
           echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
-
           aws ecs wait tasks-stopped --cluster migration-cluster --tasks $TASK_ARN
-
-          EXIT_CODE=$(aws ecs describe-tasks \
-            --cluster migration-cluster \
-            --tasks $TASK_ARN \
-            --query 'tasks[0].containers[0].exitCode' \
-            --output text)
-
+          EXIT_CODE=$(aws ecs describe-tasks --cluster migration-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
           if [ "$EXIT_CODE" != "0" ]; then
-            echo "Migration debug task failed with exit code $EXIT_CODE"
+            echo "Migration failed with exit code $EXIT_CODE"
             exit 1
           fi
+
+      - name: Deploy Backend
+        if: success()
+        env:
+          ACCOUNT_ID: ${{ steps.login-ecr.outputs.registry }}
+          REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          aws ecs register-task-definition --cli-input-json file://ecs/task-definition-backend.json
+          aws ecs update-service --cluster backend-cluster --service backend-service --task-definition backend-task --force-new-deployment
+
+     
