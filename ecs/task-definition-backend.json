@@ -30,7 +30,7 @@
       "secrets": [
         {
           "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:492267476800:secret:rds!db-36e27d39-88f8-407a-80e1-15c2601e8d28-k8YNTB"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:492267476800:secret:reneu-staging-database-url"
         }
       ]
     }
