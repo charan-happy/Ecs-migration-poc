@@ -3,7 +3,7 @@ name: Build & Deploy
 on:
   push:
     branches:
-      - develop
+      - devops-poc
 
 jobs:
   build:
@@ -42,6 +42,7 @@ jobs:
     env:
       BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPOSITORY }}
       WORKER_REPO: ${{ secrets.ECR_WORKER_REPOSITORY }}
+      MIGRATION_REPO: ${{ secrets.ECR_MIGRATION_REPOSITORY }}
       IMAGE_TAG: latest
 
     steps:
@@ -77,20 +78,51 @@ jobs:
           docker push \
             ${{ steps.login-ecr.outputs.registry }}/$BACKEND_REPO:$IMAGE_TAG
 
-      # # -------------------------
-      # # Worker Image
-      # # -------------------------
-      # - name: Build Worker image
-      #   run: |
-      #     docker build -f worker.Dockerfile -t $WORKER_REPO:$IMAGE_TAG .
+      # -------------------------
+      # Migration Image
+      # -------------------------
+      - name: Build Migration image
+        run: |
+          docker build -f migration.Dockerfile -t $MIGRATION_REPO:$IMAGE_TAG .
 
-      # - name: Tag Worker image
-      #   run: |
-      #     docker tag \
-      #       $WORKER_REPO:$IMAGE_TAG \
-      #       ${{ steps.login-ecr.outputs.registry }}/$WORKER_REPO:$IMAGE_TAG
+      - name: Tag Migration image
+        run: |
+          docker tag \
+            $MIGRATION_REPO:$IMAGE_TAG \
+            ${{ steps.login-ecr.outputs.registry }}/$MIGRATION_REPO:$IMAGE_TAG
 
-      # - name: Push Worker image
-      #   run: |
-      #     docker push \
-      #       ${{ steps.login-ecr.outputs.registry }}/$WORKER_REPO:$IMAGE_TAG
+      - name: Push Migration image
+        run: |
+          docker push \
+            ${{ steps.login-ecr.outputs.registry }}/$MIGRATION_REPO:$IMAGE_TAG
+
+      - name: Run Migration Task
+        id: migration
+        env:
+          ACCOUNT_ID: ${{ steps.login-ecr.outputs.registry }}
+          REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          ACCOUNT_ID=$(echo $ACCOUNT_ID | cut -d. -f1)
+          sed -i "s/ACCOUNT_ID/$ACCOUNT_ID/g" ecs/task-definition-migration.json
+          sed -i "s/REGION/$REGION/g" ecs/task-definition-migration.json
+          aws ecs register-task-definition --cli-input-json file://ecs/task-definition-migration.json
+          TASK_ARN=$(aws ecs run-task --cluster migration-cluster --task-definition migration-task --launch-type FARGATE --network-configuration "awsvpcConfiguration={subnets=[subnet-12345678],securityGroups=[sg-12345678]}" --query 'tasks[0].taskArn' --output text)
+          echo "TASK_ARN=$TASK_ARN" >> $GITHUB_ENV
+          aws ecs wait tasks-stopped --cluster migration-cluster --tasks $TASK_ARN
+          EXIT_CODE=$(aws ecs describe-tasks --cluster migration-cluster --tasks $TASK_ARN --query 'tasks[0].containers[0].exitCode' --output text)
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+
+      - name: Deploy Backend
+        if: success()
+        env:
+          ACCOUNT_ID: ${{ steps.login-ecr.outputs.registry }}
+          REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          ACCOUNT_ID=$(echo $ACCOUNT_ID | cut -d. -f1)
+          sed -i "s/ACCOUNT_ID/$ACCOUNT_ID/g" ecs/task-definition-backend.json
+          sed -i "s/REGION/$REGION/g" ecs/task-definition-backend.json
+          aws ecs register-task-definition --cli-input-json file://ecs/task-definition-backend.json
+          aws ecs update-service --cluster backend-cluster --service backend-service --task-definition backend-task --force-new-deployment
