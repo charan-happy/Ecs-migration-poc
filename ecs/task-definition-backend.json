@@ -1,7 +1,7 @@
 {
   "family": "backend-task",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::492267476800:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::492267476800:role/ecsTaskExecutionRole",
   "networkMode": "awsvpc",
   "requiresCompatibilities": [
     "FARGATE"
@@ -11,7 +11,7 @@
   "containerDefinitions": [
     {
       "name": "backend-container",
-      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/backend:latest",
+      "image": "492267476800.dkr.ecr.us-east-1.amazonaws.com/reneu-backend:latest",
       "essential": true,
       "portMappings": [
         {
@@ -23,14 +23,14 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/backend-service",
-          "awslogs-region": "REGION",
+          "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs"
         }
       },
       "secrets": [
         {
           "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:DATABASE_URL"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:492267476800:secret:rds!db-36e27d39-88f8-407a-80e1-15c2601e8d28-k8YNTB"
         }
       ]
     }

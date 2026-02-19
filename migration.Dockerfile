@@ -13,13 +13,13 @@ RUN apt-get update \
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
+# Copy Prisma schema (needed for postinstall)
+COPY src/db/prisma ./src/db/prisma
+
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy Prisma schema
-COPY src/db/prisma ./src/db/prisma
-
-# Generate Prisma client
+# Generate Prisma client (already done in postinstall, but ensure)
 RUN pnpm run prisma:generate
 
 # Run migration
