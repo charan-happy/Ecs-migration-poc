@@ -1,0 +1,12 @@
+{
+  "features": {
+    "ghcr.io/devcontainers/features/postgres:1": {}
+  }
+}
+
+
+# Replace with your actual RDS endpoint and credentials
+aws secretsmanager create-secret \
+  --name DATABASE_URL \
+  --secret-string '{"DATABASE_URL":"postgresql://your-db-user:your-db-password@your-rds-endpoint.rds.amazonaws.com:5432/your-database?sslmode=require"}' \
+  --region your-region
