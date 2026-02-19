@@ -1,7 +1,7 @@
 {
   "family": "migration-task",
-  "taskRoleArn": "arn:aws:iam::492267476800:role/ecsTaskExecutionRole",
-  "executionRoleArn": "arn:aws:iam::492267476800:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::492267476800:role/reneu-staging-ecs-task-role",
+  "executionRoleArn": "arn:aws:iam::492267476800:role/reneu-staging-ecs-task-execution-role",
   "networkMode": "awsvpc",
   "requiresCompatibilities": [
     "FARGATE"

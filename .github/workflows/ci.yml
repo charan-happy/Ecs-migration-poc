@@ -41,7 +41,6 @@ jobs:
 
     env:
       BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPOSITORY }}
-      WORKER_REPO: ${{ secrets.ECR_WORKER_REPOSITORY }}
       MIGRATION_REPO: ${{ secrets.ECR_MIGRATION_REPOSITORY }}
       IMAGE_TAG: latest
 
